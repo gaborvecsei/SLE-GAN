@@ -1,24 +1,7 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
 
-
-class GLU(tf.keras.layers.Layer):
-    """
-    https://arxiv.org/pdf/1612.08083.pdf
-    https://leimao.github.io/blog/Gated-Linear-Units/
-    """
-
-    def __init__(self, filters, kernel_size, **kwargs):
-        super().__init__(**kwargs)
-
-        self.conv_1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, padding="same")
-        self.conv_2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=kernel_size, padding="same")
-
-    def call(self, inputs, **kwargs):
-        x1 = self.conv_1(inputs)
-        x1 = tf.nn.sigmoid(x1)
-        x2 = self.conv_2(inputs)
-        return tf.multiply(x1, x2)
+from sle_gan.network.common_layers import GLU
 
 
 class InputBlock(tf.keras.layers.Layer):
@@ -120,6 +103,7 @@ class Generator(tf.keras.models.Model):
         super().__init__(*args, **kwargs)
 
         self.input_block = InputBlock(filters=512)  # --> (B, 4, 4, 512)
+
         self.upsample_8 = UpSamplingBlock(512)  # --> (B, 8, 8, 512)
         self.upsample_16 = UpSamplingBlock(256)  # --> (B, 16, 16, 256)
         self.upsample_32 = UpSamplingBlock(256)  # --> (B, 32, 32, 128)

@@ -1,5 +1,5 @@
 import unittest
-import generator
+from sle_gan.network.generator import Generator
 import numpy as np
 
 
@@ -9,7 +9,7 @@ class TestGeneratorModel(unittest.TestCase):
 
         self.batch_size = 4
         self.sample_input = np.random.normal(0, 1, size=(self.batch_size, 1, 1, 256))
-        self.model = generator.Generator()
+        self.model = Generator()
 
     def make_prediction(self):
         return self.model(self.sample_input).numpy()
