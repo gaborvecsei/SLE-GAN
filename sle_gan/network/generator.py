@@ -119,6 +119,12 @@ class Generator(tf.keras.models.Model):
         self.upsample_1024 = UpSamplingBlock(3)  # --> (B, 1024, 1024, 3)
         self.output_1024 = OutputBlock()  # --> (B, 1024, 1024, 3)
 
+    def initialize(self):
+        sample_input = tf.random.normal(shape=(1, 1, 1, 256), mean=0, stddev=1.0, dtype=tf.float32)
+        sample_output = self.call(sample_input)
+        return sample_output
+
+    @tf.function
     def call(self, inputs, training=None, mask=None):
         x = self.input_block(inputs)
 

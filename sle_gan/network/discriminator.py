@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 from sle_gan.network.common_layers import GLU
 
 
@@ -118,12 +119,17 @@ class RealFakeOutputBlock(tf.keras.layers.Layer):
         self.normalization = tf.keras.layers.BatchNormalization()
         self.activation = tf.keras.layers.LeakyReLU(0.1)
         self.conv_2 = tf.keras.layers.Conv2D(filters=1, kernel_size=4)
+        self.pooling = tf.keras.layers.GlobalAveragePooling2D()
+        self.dense_output = tf.keras.layers.Dense(1, activation="sigmoid")
 
     def call(self, inputs, **kwargs):
         x = self.conv_1(inputs)
         x = self.normalization(x)
         x = self.activation(x)
         x = self.conv_2(x)
+        # TODO: pooling and dense layer with sigmoid is not part of the paper
+        x = self.pooling(x)
+        x = self.dense_output(x)
         return x
 
 
@@ -143,8 +149,14 @@ class Discriminator(tf.keras.models.Model):
         # self.decoder_image_part = SimpleDecoder()
         self.decoder_image = SimpleDecoder()  # --> (B, 128, 128, 3)
 
-        self.real_fake_logits = RealFakeOutputBlock()  # --> (B, 5, 5, 1)
+        self.real_fake_output = RealFakeOutputBlock()  # --> (B, 1)
 
+    def initialize(self):
+        sample_input = tf.random.uniform(shape=(1, 1024, 1024, 3), minval=-1, maxval=1, dtype=tf.float32)
+        sample_output = self.call(sample_input)
+        return sample_output
+
+    @tf.function
     def call(self, inputs, training=None, mask=None):
         x = self.input_block(inputs)
 
@@ -157,6 +169,6 @@ class Discriminator(tf.keras.models.Model):
         # TODO: I_{part} decoder is not part of this implementation
 
         x_image = self.decoder_image(x_8)
-        x_real_fake_logits = self.real_fake_logits(x_8)
+        x_real_fake = self.real_fake_output(x_8)
 
-        return x_real_fake_logits, x_image
+        return x_real_fake, x_image
