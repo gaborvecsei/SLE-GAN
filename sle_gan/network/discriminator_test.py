@@ -18,4 +18,4 @@ class TestGeneratorModel(unittest.TestCase):
     def test_output_shape(self):
         real_fake_logits, image = self.make_prediction()
         self.assertEqual(image.shape, (self.batch_size, 128, 128, 3))
-        self.assertEqual(real_fake_logits.shape, (self.batch_size, 1))
+        self.assertEqual(real_fake_logits.shape, (self.batch_size, 5, 5, 1))
