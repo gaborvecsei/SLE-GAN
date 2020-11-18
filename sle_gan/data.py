@@ -43,11 +43,12 @@ def postprocess_images(images, dtype=tf.float32):
     return images
 
 
-def create_dataset(batch_size: int, folder: str, use_flip_augmentation: bool = True, image_extension: str = "jpg"):
+def create_dataset(batch_size: int, folder: str, use_flip_augmentation: bool = True, image_extension: str = "jpg",
+                   shuffle_buffer_size: int = 100):
     dataset = tf.data.Dataset.list_files(folder + f"/*.{image_extension}")
     dataset = dataset.map(read_image_from_path)
     if use_flip_augmentation:
         dataset = dataset.map(tf.image.flip_left_right)
     dataset = dataset.map(preprocess_images)
-    dataset = dataset.repeat().shuffle(buffer_size=100).batch(batch_size)
+    dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset
