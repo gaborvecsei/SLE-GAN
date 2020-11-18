@@ -6,7 +6,7 @@ import numpy as np
 
 def generate_and_save_images(G, epoch, test_input, save_folder: str):
     save_folder = Path(save_folder) / "generated_images"
-    if save_folder.is_dir():
+    if not save_folder.is_dir():
         save_folder.mkdir(parents=True)
 
     predictions = G(test_input, training=False).numpy()
