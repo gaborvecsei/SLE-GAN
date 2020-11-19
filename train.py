@@ -14,8 +14,9 @@ print(args)
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epochs
 LR = args.learning_rate
+DATA_FOLDER = args.data_folder
 
-dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder="./dataset", use_flip_augmentation=True,
+dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, use_flip_augmentation=True,
                                  shuffle_buffer_size=200)
 
 G = sle_gan.Generator()

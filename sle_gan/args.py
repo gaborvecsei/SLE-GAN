@@ -3,6 +3,7 @@ import argparse
 
 def get_args():
     parser = argparse.ArgumentParser()
+    parser.add_argument("--data-folder", type=str, required=True)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--epochs", type=int, default=100)
     parser.add_argument("--learning-rate", type=float, default=1e-3)
