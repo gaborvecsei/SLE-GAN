@@ -3,7 +3,7 @@ import tensorflow as tf
 import sle_gan
 
 # For debugging:
-tf.config.experimental_run_functions_eagerly(True)
+# tf.config.experimental_run_functions_eagerly(True)
 
 physical_devices = tf.config.list_physical_devices('GPU')
 _ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
