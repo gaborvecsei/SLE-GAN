@@ -8,8 +8,12 @@ tf.config.experimental_run_functions_eagerly(True)
 physical_devices = tf.config.list_physical_devices('GPU')
 _ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
 
-BATCH_SIZE = 1
-EPOCHS = 100
+args = sle_gan.get_args()
+print(args)
+
+BATCH_SIZE = args.batch_size
+EPOCHS = args.epochs
+LR = args.learning_rate
 
 dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder="./dataset", use_flip_augmentation=True,
                                  shuffle_buffer_size=200)
@@ -23,8 +27,8 @@ sample_D_output = D.initialize()
 print(f"[D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[D] image output shape{sample_D_output[1].shape}")
 
-G_optimizer = tf.optimizers.Adam(learning_rate=1e-3)
-D_optimizer = tf.optimizers.Adam(learning_rate=1e-3)
+G_optimizer = tf.optimizers.Adam(learning_rate=LR)
+D_optimizer = tf.optimizers.Adam(learning_rate=LR)
 
 test_input_for_generation = sle_gan.create_input_noise(4)
 

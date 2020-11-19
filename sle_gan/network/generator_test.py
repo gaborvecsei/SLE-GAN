@@ -16,7 +16,7 @@ class TestGeneratorModel(unittest.TestCase):
 
     def test_output_shape(self):
         image = self.make_prediction()
-        self.assertEqual(image.shape, (self.batch_size, 1024, 1024, 3))
+        self.assertEqual(image.shape, (self.batch_size, 256, 256, 3))
 
     def test_output_value_range(self):
         image = self.make_prediction()

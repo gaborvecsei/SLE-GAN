@@ -8,7 +8,7 @@ class TestGeneratorModel(unittest.TestCase):
         super().setUp()
 
         self.batch_size = 4
-        self.sample_input = np.random.uniform(low=-1, high=1, size=(self.batch_size, 1024, 1024, 3))
+        self.sample_input = np.random.uniform(low=-1, high=1, size=(self.batch_size, 256, 256, 3))
         self.model = Discriminator()
 
     def make_prediction(self):
