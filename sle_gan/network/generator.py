@@ -20,7 +20,7 @@ class InputBlock(tf.keras.layers.Layer):
                                                                 strides=(4, 4),
                                                                 padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=filters, kernel_size=1)
+        self.glu = GLU(filters=filters, kernel_size=3)
 
     def call(self, inputs, **kwargs):
         x = self.conv2d_transpose(inputs)
@@ -37,7 +37,7 @@ class UpSamplingBlock(tf.keras.layers.Layer):
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
         self.conv2d = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=(3, 3), padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=self.filters, kernel_size=1)
+        self.glu = GLU(filters=self.filters, kernel_size=3)
 
     def call(self, inputs, **kwargs):
         x = self.upsampling(inputs)
@@ -85,7 +85,6 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
 class OutputBlock(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
         self.conv = tf.keras.layers.Conv2D(filters=3, kernel_size=3, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -102,11 +101,11 @@ class Generator(tf.keras.models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.input_block = InputBlock(filters=512)  # --> (B, 4, 4, 512)
+        self.input_block = InputBlock(filters=256)  # --> (B, 4, 4, 256)
 
-        self.upsample_8 = UpSamplingBlock(512)  # --> (B, 8, 8, 512)
-        self.upsample_16 = UpSamplingBlock(256)  # --> (B, 16, 16, 256)
-        self.upsample_32 = UpSamplingBlock(256)  # --> (B, 32, 32, 128)
+        self.upsample_8 = UpSamplingBlock(256)  # --> (B, 8, 8, 256)
+        self.upsample_16 = UpSamplingBlock(128)  # --> (B, 16, 16, 256)
+        self.upsample_32 = UpSamplingBlock(128)  # --> (B, 32, 32, 128)
         self.upsample_64 = UpSamplingBlock(64)  # --> (B, 64, 64, 64)
         self.upsample_128 = UpSamplingBlock(64)  # --> (B, 128, 128, 64)
         self.upsample_256 = UpSamplingBlock(32)  # --> (B, 256, 256, 32)

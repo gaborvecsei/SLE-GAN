@@ -13,7 +13,7 @@ def read_image_from_path(image_path):
 
 def preprocess_images(images):
     """
-    Resize and normalize the images tot he range [-1, 1]
+    Resize and normalize the images tot he range [0, 1]
     Args:
         images: batch of images (B, H, W, C)
 
@@ -22,8 +22,7 @@ def preprocess_images(images):
     """
 
     images = tf.image.resize(images, (1024, 1024))
-    images = tf.cast(images, tf.float32) - 127.5
-    images = images / 127.5
+    images = tf.cast(images, tf.float32) / 255
     return images
 
 
@@ -38,7 +37,7 @@ def postprocess_images(images, dtype=tf.float32):
         de-normalized images
     """
 
-    images = (images * 127.5) + 127.5
+    images = images * 255
     images = tf.cast(images, dtype)
     return images
 

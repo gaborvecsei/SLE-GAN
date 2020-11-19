@@ -87,7 +87,7 @@ class SimpleDecoderBlock(tf.keras.layers.Layer):
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
         self.conv = tf.keras.layers.Conv2D(filters=filters, kernel_size=3, padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=filters, kernel_size=1)
+        self.glu = GLU(filters=filters, kernel_size=3)
 
     def call(self, inputs, **kwargs):
         x = self.upsampling(inputs)
@@ -106,8 +106,8 @@ class SimpleDecoder(tf.keras.layers.Layer):
 
     def call(self, inputs, **kwargs):
         x = inputs
-        for decoder in self.decoder_blocks:
-            x = decoder(x)
+        for decoder_block in self.decoder_blocks:
+            x = decoder_block(x)
         return x
 
 
@@ -147,7 +147,7 @@ class Discriminator(tf.keras.models.Model):
         self.real_fake_output = RealFakeOutputBlock()  # --> (B, 5, 5, 1)
 
     def initialize(self):
-        sample_input = tf.random.uniform(shape=(1, 1024, 1024, 3), minval=-1, maxval=1, dtype=tf.float32)
+        sample_input = tf.random.uniform(shape=(1, 1024, 1024, 3), minval=0, maxval=1, dtype=tf.float32)
         sample_output = self.call(sample_input)
         return sample_output
 
@@ -163,7 +163,7 @@ class Discriminator(tf.keras.models.Model):
 
         # TODO: I_{part} decoder is not part of this implementation
 
-        x_image = self.decoder_image(x_8)
+        x_image_128 = self.decoder_image(x_8)
         x_real_fake_logits = self.real_fake_output(x_8)
 
-        return x_real_fake_logits, x_image
+        return x_real_fake_logits, x_image_128

@@ -17,12 +17,16 @@ def train_step(G, D, G_optimizer, D_optimizer, images) -> tuple:
         real_fake_output_logits_on_real_images, decoded_real_image = D(images, training=True)
         real_fake_output_logits_on_fake_images, _ = D(generated_images, training=True)
 
+        # Generator loss
         G_loss = sle_gan.generator_loss(real_fake_output_logits_on_fake_images=real_fake_output_logits_on_fake_images)
-        D_loss = sle_gan.discriminator_loss(
+
+        # Discriminator loss
+        D_real_fake_loss = sle_gan.discriminator_real_fake_loss(
             real_fake_output_logits_on_real_images=real_fake_output_logits_on_real_images,
-            real_fake_output_logits_on_fake_images=real_fake_output_logits_on_fake_images,
-            real_image_128=image_batch_128,
-            decoded_image_128=decoded_real_image)
+            real_fake_output_logits_on_fake_images=real_fake_output_logits_on_fake_images)
+        D_reconstruction_loss = sle_gan.discriminator_reconstruction_loss(real_image=image_batch_128,
+                                                                          decoded_image=decoded_real_image)
+        D_loss = D_real_fake_loss + D_reconstruction_loss
 
     G_gradients = tape_G.gradient(G_loss, G.trainable_variables)
     D_gradients = tape_D.gradient(D_loss, D.trainable_variables)
@@ -30,4 +34,4 @@ def train_step(G, D, G_optimizer, D_optimizer, images) -> tuple:
     G_optimizer.apply_gradients(zip(G_gradients, G.trainable_variables))
     D_optimizer.apply_gradients(zip(D_gradients, D.trainable_variables))
 
-    return G_loss, D_loss
+    return G_loss, D_loss, D_real_fake_loss, D_reconstruction_loss

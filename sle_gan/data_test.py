@@ -22,5 +22,5 @@ class TestData(unittest.TestCase):
         self.assertEqual(self.image_batch.dtype, np.float32)
 
     def test_min_max_values(self):
-        self.assertGreaterEqual(self.image_batch.min(), -1)
+        self.assertGreaterEqual(self.image_batch.min(), 0)
         self.assertLessEqual(self.image_batch.max(), 1)
