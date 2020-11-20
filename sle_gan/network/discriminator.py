@@ -146,18 +146,22 @@ class Discriminator(tf.keras.models.Model):
 
         downsampling_factor_dict = {256: 1, 512: 2, 1024: 4}
         self.input_block = InputBlock(filters=16, downsampling_factor=downsampling_factor_dict[
-            input_resolution])  # --> (B, 256, 256, 16)
+            input_resolution])
 
-        self.downsample_128 = DownSamplingBlock(filters=32)  # --> (B, 128, 128, 32)
-        self.downsample_64 = DownSamplingBlock(filters=32)  # --> (B, 64, 64, 32)
-        self.downsample_32 = DownSamplingBlock(filters=64)  # --> (B, 32, 32, 64)
-        self.downsample_16 = DownSamplingBlock(filters=64)  # --> (B, 16, 16, 64)
-        self.downsample_8 = DownSamplingBlock(filters=128)  # --> (B, 8, 8, 128)
+        self.downsample_128 = DownSamplingBlock(filters=32)
+        self.downsample_64 = DownSamplingBlock(filters=32)
+        self.downsample_32 = DownSamplingBlock(filters=64)
+        self.downsample_16 = DownSamplingBlock(filters=64)
+        self.downsample_8 = DownSamplingBlock(filters=128)
 
-        # TODO: I_{part} decoder is not part of this implementation
-        self.decoder_image = SimpleDecoder()  # --> (B, 128, 128, 3)
+        # TODO: implement random crop
+        # This layer crops a 8x8 center crop from the 16x16 feature map
+        self.center_crop_feature_map = tf.keras.layers.experimental.preprocessing.CenterCrop(height=8, width=8)
 
-        self.real_fake_output = RealFakeOutputBlock()  # --> (B, 5, 5, 1)
+        self.decoder_image_part = SimpleDecoder()
+        self.decoder_image = SimpleDecoder()
+
+        self.real_fake_output = RealFakeOutputBlock()
 
     def initialize(self, batch_size: int = 1):
         sample_input = tf.random.uniform(shape=(batch_size, self.input_resolution, self.input_resolution, 3), minval=0,
@@ -167,15 +171,18 @@ class Discriminator(tf.keras.models.Model):
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.input_block(inputs)
+        x = self.input_block(inputs)  # --> (B, 256, 256, 16)
 
-        x = self.downsample_128(x)
-        x = self.downsample_64(x)
-        x = self.downsample_32(x)
-        x_16 = self.downsample_16(x)
-        x_8 = self.downsample_8(x_16)
+        x = self.downsample_128(x)  # --> (B, 128, 128, 32)
+        x = self.downsample_64(x)  # --> (B, 64, 64, 32)
+        x = self.downsample_32(x)  # --> (B, 32, 32, 64)
+        x_16 = self.downsample_16(x)  # --> (B, 16, 16, 64)
+        x_8 = self.downsample_8(x_16)  # --> (B, 8, 8, 128)
 
-        x_image_128 = self.decoder_image(x_8)
-        x_real_fake_logits = self.real_fake_output(x_8)
+        center_cropped_x_16 = self.center_crop_feature_map(x_16)  # --> (B, 8, 8, 3)
+        x_image_decoded_128_center_part = self.decoder_image_part(center_cropped_x_16)  # --> (B, 128, 128, 3)
+        x_image_decoded_128 = self.decoder_image(x_8)  # --> (B, 128, 128, 3)
 
-        return x_real_fake_logits, x_image_128
+        x_real_fake_logits = self.real_fake_output(x_8)  # --> (B, 5, 5, 1)
+
+        return x_real_fake_logits, x_image_decoded_128, x_image_decoded_128_center_part
