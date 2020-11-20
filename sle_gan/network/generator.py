@@ -109,14 +109,11 @@ class Generator(tf.keras.models.Model):
         self.upsample_64 = UpSamplingBlock(64)  # --> (B, 64, 64, 64)
         self.upsample_128 = UpSamplingBlock(64)  # --> (B, 128, 128, 64)
         self.upsample_256 = UpSamplingBlock(32)  # --> (B, 256, 256, 32)
-        self.upsample_512 = UpSamplingBlock(16)  # --> (B, 512, 512, 16)
 
         self.sle_8_128 = SkipLayerExcitationBlock(self.upsample_8, self.upsample_128)  # --> (B, 128, 128, 64)
         self.sle_16_256 = SkipLayerExcitationBlock(self.upsample_16, self.upsample_256)  # --> (B, 256, 256, 32)
-        self.sle_32_512 = SkipLayerExcitationBlock(self.upsample_32, self.upsample_512)  # --> (B, 512, 512, 16)
 
-        self.upsample_1024 = UpSamplingBlock(3)  # --> (B, 1024, 1024, 3)
-        self.output_1024 = OutputBlock()  # --> (B, 1024, 1024, 3)
+        self.output_image = OutputBlock()  # --> (B, 1024, 1024, 3)
 
     def initialize(self):
         sample_input = tf.random.normal(shape=(1, 1, 1, 256), mean=0, stddev=1.0, dtype=tf.float32)
@@ -138,10 +135,5 @@ class Generator(tf.keras.models.Model):
         x_256 = self.upsample_256(x_sle_128)
         x_sle_256 = self.sle_16_256([x_16, x_256])
 
-        x_512 = self.upsample_512(x_sle_256)
-        x_sle_512 = self.sle_32_512([x_32, x_512])
-
-        x_1024 = self.upsample_1024(x_sle_512)
-        image = self.output_1024(x_1024)
-
+        image = self.output_image(x_sle_256)
         return image

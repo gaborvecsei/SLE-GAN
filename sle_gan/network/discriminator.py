@@ -132,8 +132,6 @@ class Discriminator(tf.keras.models.Model):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.input_block = InputBlock(filters=16)  # --> (B, 256, 256, 16)
-
         self.downsample_128 = DownSamplingBlock(filters=32)  # --> (B, 128, 128, 32)
         self.downsample_64 = DownSamplingBlock(filters=64)  # --> (B, 64, 64, 64)
         self.downsample_32 = DownSamplingBlock(filters=128)  # --> (B, 32, 32, 128)
@@ -147,15 +145,13 @@ class Discriminator(tf.keras.models.Model):
         self.real_fake_output = RealFakeOutputBlock()  # --> (B, 5, 5, 1)
 
     def initialize(self):
-        sample_input = tf.random.uniform(shape=(1, 1024, 1024, 3), minval=0, maxval=1, dtype=tf.float32)
+        sample_input = tf.random.uniform(shape=(1, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
         sample_output = self.call(sample_input)
         return sample_output
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.input_block(inputs)
-
-        x = self.downsample_128(x)
+        x = self.downsample_128(inputs)
         x = self.downsample_64(x)
         x = self.downsample_32(x)
         x = self.downsample_16(x)
