@@ -1,6 +1,9 @@
-import tensorflow as tf
-
 import sle_gan
+
+args = sle_gan.get_args()
+print(args)
+
+import tensorflow as tf
 
 # For debugging:
 # tf.config.experimental_run_functions_eagerly(True)
@@ -8,18 +11,16 @@ import sle_gan
 physical_devices = tf.config.list_physical_devices('GPU')
 _ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
 
-args = sle_gan.get_args()
-print(args)
-
+RESOLUTION = args.resolution
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epochs
 LR = args.learning_rate
 DATA_FOLDER = args.data_folder
 
-dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, use_flip_augmentation=True,
-                                 shuffle_buffer_size=200)
+dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, resolution=RESOLUTION,
+                                 use_flip_augmentation=True, shuffle_buffer_size=200)
 
-G = sle_gan.Generator()
+G = sle_gan.Generator(RESOLUTION)
 try:
     G.load_weights("./checkpoints/G_checkpoint.h5")
     print("Weights are loadaed for G")
@@ -28,12 +29,13 @@ except:
 sample_G_output = G.initialize()
 print(f"[G] output shape: {sample_G_output.shape}")
 
-D = sle_gan.Discriminator()
+D = sle_gan.Discriminator(RESOLUTION)
 try:
-    sample_D_output = D.initialize()
+    D.load_weights("./checkpoints/D_checkpoint.h5")
     print("Weights are loadaed for D")
 except:
     pass
+sample_D_output = D.initialize()
 print(f"[D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[D] image output shape{sample_D_output[1].shape}")
 

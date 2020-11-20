@@ -11,12 +11,22 @@ class InputBlock(tf.keras.layers.Layer):
     Output shape: (B, 256, 256, C)
     """
 
-    def __init__(self, filters, **kwargs):
+    def __init__(self, downsampling_factor: int, filters, **kwargs):
         super().__init__(**kwargs)
+        assert downsampling_factor in [1, 2, 4]
 
-        self.conv_1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=4, strides=2, padding="same")
+        conv_1_strides = 2
+        conv_2_strides = 2
+
+        if downsampling_factor <= 2:
+            conv_2_strides = 1
+
+        if downsampling_factor == 1:
+            conv_1_strides = 1
+
+        self.conv_1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=4, strides=conv_1_strides, padding="same")
         self.activation_1 = tf.keras.layers.LeakyReLU(0.1)
-        self.conv_2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=4, strides=2, padding="same")
+        self.conv_2 = tf.keras.layers.Conv2D(filters=filters, kernel_size=4, strides=conv_2_strides, padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
         self.activation_2 = tf.keras.layers.LeakyReLU(0.1)
 
@@ -129,35 +139,41 @@ class RealFakeOutputBlock(tf.keras.layers.Layer):
 
 
 class Discriminator(tf.keras.models.Model):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, input_resolution: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert input_resolution in [256, 512, 1024], "Resolution should be 256 or 512 or 1024"
+        self.input_resolution = input_resolution
+
+        downsampling_factor_dict = {256: 1, 512: 2, 1024: 4}
+        self.input_block = InputBlock(filters=16, downsampling_factor=downsampling_factor_dict[
+            input_resolution])  # --> (B, 256, 256, 16)
 
         self.downsample_128 = DownSamplingBlock(filters=32)  # --> (B, 128, 128, 32)
-        self.downsample_64 = DownSamplingBlock(filters=64)  # --> (B, 64, 64, 64)
-        self.downsample_32 = DownSamplingBlock(filters=128)  # --> (B, 32, 32, 128)
-        self.downsample_16 = DownSamplingBlock(filters=256)  # --> (B, 16, 16, 256)
-        self.downsample_8 = DownSamplingBlock(filters=512)  # --> (B, 8, 8, 512)
+        self.downsample_64 = DownSamplingBlock(filters=32)  # --> (B, 64, 64, 32)
+        self.downsample_32 = DownSamplingBlock(filters=64)  # --> (B, 32, 32, 64)
+        self.downsample_16 = DownSamplingBlock(filters=64)  # --> (B, 16, 16, 64)
+        self.downsample_8 = DownSamplingBlock(filters=128)  # --> (B, 8, 8, 128)
 
         # TODO: I_{part} decoder is not part of this implementation
-        # self.decoder_image_part = SimpleDecoder()
         self.decoder_image = SimpleDecoder()  # --> (B, 128, 128, 3)
 
         self.real_fake_output = RealFakeOutputBlock()  # --> (B, 5, 5, 1)
 
-    def initialize(self):
-        sample_input = tf.random.uniform(shape=(1, 256, 256, 3), minval=0, maxval=1, dtype=tf.float32)
+    def initialize(self, batch_size: int = 1):
+        sample_input = tf.random.uniform(shape=(batch_size, self.res, self.res, 3), minval=0, maxval=1,
+                                         dtype=tf.float32)
         sample_output = self.call(sample_input)
         return sample_output
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.downsample_128(inputs)
+        x = self.input_block(inputs)
+
+        x = self.downsample_128(x)
         x = self.downsample_64(x)
         x = self.downsample_32(x)
-        x = self.downsample_16(x)
-        x_8 = self.downsample_8(x)
-
-        # TODO: I_{part} decoder is not part of this implementation
+        x_16 = self.downsample_16(x)
+        x_8 = self.downsample_8(x_16)
 
         x_image_128 = self.decoder_image(x_8)
         x_real_fake_logits = self.real_fake_output(x_8)
