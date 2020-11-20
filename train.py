@@ -20,11 +20,20 @@ dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, use_
                                  shuffle_buffer_size=200)
 
 G = sle_gan.Generator()
+try:
+    G.load_weights("./checkpoints/G_checkpoint.h5")
+    print("Weights are loadaed for G")
+except:
+    pass
 sample_G_output = G.initialize()
 print(f"[G] output shape: {sample_G_output.shape}")
 
 D = sle_gan.Discriminator()
-sample_D_output = D.initialize()
+try:
+    sample_D_output = D.initialize()
+    print("Weights are loadaed for D")
+except:
+    pass
 print(f"[D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[D] image output shape{sample_D_output[1].shape}")
 
@@ -63,9 +72,9 @@ for epoch in range(EPOCHS):
                   f"D recon loss {D_reconstruction_loss_metric.result()}")
 
     tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_loss", G_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_real_fake_loss", G_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_reconstruction_loss", G_loss_metric.result(), epoch)
+    tf.summary.scalar("D_loss/D_loss", D_loss_metric.result(), epoch)
+    tf.summary.scalar("D_loss/D_real_fake_loss", D_real_fake_loss_metric.result(), epoch)
+    tf.summary.scalar("D_loss/D_reconstruction_loss", D_reconstruction_loss_metric.result(), epoch)
 
     print(f"Epoch {epoch} - "
           f"G loss {G_loss_metric.result():.4f}, "
@@ -76,4 +85,6 @@ for epoch in range(EPOCHS):
     G_loss_metric.reset_states()
     D_loss_metric.reset_states()
 
+    G.save_weights("./checkpoints/G_checkpoint.h5")
+    D.save_weights("./checkpoints/D_checkpoint.h5")
     sle_gan.generate_and_save_images(G, epoch, test_input_for_generation, "logs")
