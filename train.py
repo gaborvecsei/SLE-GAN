@@ -52,6 +52,7 @@ except:
 sample_D_output = D.initialize(BATCH_SIZE)
 print(f"[D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[D] image output shape{sample_D_output[1].shape}")
+print(f"[D] image part output shape{sample_D_output[2].shape}")
 
 G_optimizer = tf.optimizers.Adam(learning_rate=LR)
 D_optimizer = tf.optimizers.Adam(learning_rate=LR)
