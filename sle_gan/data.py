@@ -1,3 +1,5 @@
+from functools import partial
+
 import tensorflow as tf
 
 
@@ -11,7 +13,7 @@ def read_image_from_path(image_path):
     return image
 
 
-def preprocess_images(images):
+def preprocess_images(images, resolution: int):
     """
     Resize and normalize the images tot he range [-1, 1]
     Args:
@@ -21,7 +23,7 @@ def preprocess_images(images):
         resized and normalized images
     """
 
-    images = tf.image.resize(images, (1024, 1024))
+    images = tf.image.resize(images, (resolution, resolution))
     images = tf.cast(images, tf.float32) - 127.5
     images = images / 127.5
     return images
@@ -43,12 +45,16 @@ def postprocess_images(images, dtype=tf.float32):
     return images
 
 
-def create_dataset(batch_size: int, folder: str, use_flip_augmentation: bool = True, image_extension: str = "jpg",
+def create_dataset(batch_size: int,
+                   folder: str,
+                   resolution: int,
+                   use_flip_augmentation: bool = True,
+                   image_extension: str = "jpg",
                    shuffle_buffer_size: int = 100):
     dataset = tf.data.Dataset.list_files(folder + f"/*.{image_extension}")
     dataset = dataset.map(read_image_from_path)
     if use_flip_augmentation:
         dataset = dataset.map(tf.image.flip_left_right)
-    dataset = dataset.map(preprocess_images)
+    dataset = dataset.map(partial(preprocess_images, resolution=resolution))
     dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset

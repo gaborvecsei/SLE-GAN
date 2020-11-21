@@ -20,7 +20,7 @@ class InputBlock(tf.keras.layers.Layer):
                                                                 strides=(4, 4),
                                                                 padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=filters, kernel_size=1)
+        self.glu = GLU()
 
     def call(self, inputs, **kwargs):
         x = self.conv2d_transpose(inputs)
@@ -37,7 +37,7 @@ class UpSamplingBlock(tf.keras.layers.Layer):
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
         self.conv2d = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=(3, 3), padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=self.filters, kernel_size=1)
+        self.glu = GLU()
 
     def call(self, inputs, **kwargs):
         x = self.upsampling(inputs)
@@ -85,7 +85,6 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
 class OutputBlock(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
         self.conv = tf.keras.layers.Conv2D(filters=3, kernel_size=3, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -99,50 +98,55 @@ class Generator(tf.keras.models.Model):
     Input of the Generator is in shape: (B, 1, 1, 256)
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, output_resolution: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert output_resolution in [256, 512, 1024], "Resolution should be 256 or 512 or 1024"
+        self.output_resolution = output_resolution
 
-        self.input_block = InputBlock(filters=512)  # --> (B, 4, 4, 512)
+        self.input_block = InputBlock(filters=256)
 
-        self.upsample_8 = UpSamplingBlock(512)  # --> (B, 8, 8, 512)
-        self.upsample_16 = UpSamplingBlock(256)  # --> (B, 16, 16, 256)
-        self.upsample_32 = UpSamplingBlock(256)  # --> (B, 32, 32, 128)
-        self.upsample_64 = UpSamplingBlock(64)  # --> (B, 64, 64, 64)
-        self.upsample_128 = UpSamplingBlock(64)  # --> (B, 128, 128, 64)
-        self.upsample_256 = UpSamplingBlock(32)  # --> (B, 256, 256, 32)
-        self.upsample_512 = UpSamplingBlock(16)  # --> (B, 512, 512, 16)
+        # Every layer is initiated, but we might not use the last ones. It depends on the resolution
+        self.upsample_8 = UpSamplingBlock(256)
+        self.upsample_16 = UpSamplingBlock(128)
+        self.upsample_32 = UpSamplingBlock(128)
+        self.upsample_64 = UpSamplingBlock(64)
+        self.upsample_128 = UpSamplingBlock(64)
+        self.upsample_256 = UpSamplingBlock(32)
+        self.upsample_512 = UpSamplingBlock(32)
+        self.upsample_1024 = UpSamplingBlock(16)
 
-        self.sle_8_128 = SkipLayerExcitationBlock(self.upsample_8, self.upsample_128)  # --> (B, 128, 128, 64)
-        self.sle_16_256 = SkipLayerExcitationBlock(self.upsample_16, self.upsample_256)  # --> (B, 256, 256, 32)
-        self.sle_32_512 = SkipLayerExcitationBlock(self.upsample_32, self.upsample_512)  # --> (B, 512, 512, 16)
+        self.sle_8_128 = SkipLayerExcitationBlock(self.upsample_8, self.upsample_128)
+        self.sle_16_256 = SkipLayerExcitationBlock(self.upsample_16, self.upsample_256)
+        self.sle_32_512 = SkipLayerExcitationBlock(self.upsample_32, self.upsample_512)
 
-        self.upsample_1024 = UpSamplingBlock(3)  # --> (B, 1024, 1024, 3)
-        self.output_1024 = OutputBlock()  # --> (B, 1024, 1024, 3)
+        self.output_image = OutputBlock()
 
-    def initialize(self):
-        sample_input = tf.random.normal(shape=(1, 1, 1, 256), mean=0, stddev=1.0, dtype=tf.float32)
+    def initialize(self, batch_size: int = 1):
+        sample_input = tf.random.normal(shape=(batch_size, 1, 1, 256), mean=0, stddev=1.0, dtype=tf.float32)
         sample_output = self.call(sample_input)
         return sample_output
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.input_block(inputs)
+        x = self.input_block(inputs)  # --> (B, 4, 4, 256)
 
-        x_8 = self.upsample_8(x)
-        x_16 = self.upsample_16(x_8)
-        x_32 = self.upsample_32(x_16)
-        x_64 = self.upsample_64(x_32)
+        x_8 = self.upsample_8(x)  # --> (B, 8, 8, 256)
+        x_16 = self.upsample_16(x_8)  # --> (B, 16, 16, 128)
+        x_32 = self.upsample_32(x_16)  # --> (B, 32, 32, 128)
+        x_64 = self.upsample_64(x_32)  # --> (B, 64, 64, 64)
 
-        x_128 = self.upsample_128(x_64)
-        x_sle_128 = self.sle_8_128([x_8, x_128])
+        x_128 = self.upsample_128(x_64)  # --> (B, 128, 128, 64)
+        x_sle_128 = self.sle_8_128([x_8, x_128])  # --> (B, 128, 128, 64)
 
-        x_256 = self.upsample_256(x_sle_128)
-        x_sle_256 = self.sle_16_256([x_16, x_256])
+        x_256 = self.upsample_256(x_sle_128)  # --> (B, 256, 256, 32)
+        x = self.sle_16_256([x_16, x_256])  # --> (B, 256, 256, 32)
 
-        x_512 = self.upsample_512(x_sle_256)
-        x_sle_512 = self.sle_32_512([x_32, x_512])
+        if self.output_resolution > 256:
+            x_512 = self.upsample_512(x)  # --> (B, 512, 512, 32)
+            x = self.sle_32_512([x_32, x_512])  # --> (B, 512, 512, 16)
 
-        x_1024 = self.upsample_1024(x_sle_512)
-        image = self.output_1024(x_1024)
+            if self.output_resolution > 512:
+                x = self.upsample_1024(x)  # --> (B, 1024, 1024, 16)
 
+        image = self.output_image(x)  # --> (B, resolution, resolution, 3)
         return image
