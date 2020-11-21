@@ -20,7 +20,7 @@ class InputBlock(tf.keras.layers.Layer):
                                                                 strides=(4, 4),
                                                                 padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=filters, kernel_size=3)
+        self.glu = GLU()
 
     def call(self, inputs, **kwargs):
         x = self.conv2d_transpose(inputs)
@@ -37,7 +37,7 @@ class UpSamplingBlock(tf.keras.layers.Layer):
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
         self.conv2d = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=(3, 3), padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
-        self.glu = GLU(filters=self.filters, kernel_size=3)
+        self.glu = GLU()
 
     def call(self, inputs, **kwargs):
         x = self.upsampling(inputs)

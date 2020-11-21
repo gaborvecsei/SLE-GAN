@@ -6,7 +6,7 @@ import numpy as np
 import sle_gan
 
 
-def generate_and_save_images(G, epoch, test_input, save_folder: str):
+def generate_and_save_images(G, epoch, test_input, save_folder):
     save_folder = Path(save_folder) / "generated_images"
     if not save_folder.is_dir():
         save_folder.mkdir(parents=True)
