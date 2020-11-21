@@ -18,7 +18,8 @@ class InputBlock(tf.keras.layers.Layer):
         self.conv2d_transpose = tf.keras.layers.Conv2DTranspose(filters=filters,
                                                                 kernel_size=(1, 1),
                                                                 strides=(4, 4),
-                                                                padding="same")
+                                                                padding="same",
+                                                                use_bias=False)
         self.normalization = tf.keras.layers.BatchNormalization()
         self.glu = GLU()
 
@@ -33,6 +34,8 @@ class UpSamplingBlock(tf.keras.layers.Layer):
     def __init__(self, filters: int, **kwargs):
         super().__init__(**kwargs)
         self.filters = filters
+        # This happens because of the GLU layer
+        self.output_filters = filters // 2
 
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
         self.conv2d = tf.keras.layers.Conv2D(filters=self.filters, kernel_size=(3, 3), padding="same")
@@ -66,9 +69,13 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
         super().__init__(**kwargs)
 
         self.pooling = tfa.layers.AdaptiveAveragePooling2D(output_size=(4, 4), data_format="channels_last")
-        self.conv2d_1 = tf.keras.layers.Conv2D(filters=input_low_res.filters, kernel_size=(4, 4), padding="valid")
+        self.conv2d_1 = tf.keras.layers.Conv2D(filters=input_low_res.output_filters,
+                                               kernel_size=(4, 4),
+                                               padding="valid")
         self.leaky_relu = tf.keras.layers.LeakyReLU(alpha=0.1)
-        self.conv2d_2 = tf.keras.layers.Conv2D(filters=input_high_res.filters, kernel_size=(1, 1), padding="same")
+        self.conv2d_2 = tf.keras.layers.Conv2D(filters=input_high_res.output_filters,
+                                               kernel_size=(1, 1),
+                                               padding="same")
 
     def call(self, inputs, **kwargs):
         x_low, x_high = inputs
@@ -103,17 +110,17 @@ class Generator(tf.keras.models.Model):
         assert output_resolution in [256, 512, 1024], "Resolution should be 256 or 512 or 1024"
         self.output_resolution = output_resolution
 
-        self.input_block = InputBlock(filters=256)
+        self.input_block = InputBlock(filters=512)
 
         # Every layer is initiated, but we might not use the last ones. It depends on the resolution
-        self.upsample_8 = UpSamplingBlock(256)
-        self.upsample_16 = UpSamplingBlock(128)
+        self.upsample_8 = UpSamplingBlock(512)
+        self.upsample_16 = UpSamplingBlock(512)
         self.upsample_32 = UpSamplingBlock(128)
-        self.upsample_64 = UpSamplingBlock(64)
+        self.upsample_64 = UpSamplingBlock(128)
         self.upsample_128 = UpSamplingBlock(64)
-        self.upsample_256 = UpSamplingBlock(32)
+        self.upsample_256 = UpSamplingBlock(64)
         self.upsample_512 = UpSamplingBlock(32)
-        self.upsample_1024 = UpSamplingBlock(16)
+        self.upsample_1024 = UpSamplingBlock(32)
 
         self.sle_8_128 = SkipLayerExcitationBlock(self.upsample_8, self.upsample_128)
         self.sle_16_256 = SkipLayerExcitationBlock(self.upsample_16, self.upsample_256)

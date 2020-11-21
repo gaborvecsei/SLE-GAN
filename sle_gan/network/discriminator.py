@@ -111,7 +111,7 @@ class SimpleDecoder(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.decoder_block_filter_sizes = [32, 16, 8, 3]
+        self.decoder_block_filter_sizes = [32, 16, 8, 6]
         self.decoder_blocks = [SimpleDecoderBlock(filters=x) for x in self.decoder_block_filter_sizes]
 
     def call(self, inputs, **kwargs):

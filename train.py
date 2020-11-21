@@ -1,12 +1,12 @@
 import shutil
 from pathlib import Path
 
+import tensorflow as tf
+
 import sle_gan
 
 args = sle_gan.get_args()
 print(args)
-
-import tensorflow as tf
 
 # For debugging:
 # tf.config.experimental_run_functions_eagerly(True)
