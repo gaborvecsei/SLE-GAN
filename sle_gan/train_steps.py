@@ -4,7 +4,8 @@ import sle_gan
 
 
 @tf.function
-def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bool = False) -> tuple:
+def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bool = False,
+               diff_augmenter_policies: str = None) -> tuple:
     batch_size = tf.shape(images)[0]
 
     # Input for the generator
@@ -23,9 +24,10 @@ def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bo
     with tf.GradientTape() as tape_G, tf.GradientTape() as tape_D:
         generated_images = G(noise_input, training=True)
 
-        real_fake_output_logits_on_real_images, decoded_real_image, decoded_real_image_central_crop = D(images,
-                                                                                                        training=True)
-        real_fake_output_logits_on_fake_images, _, _ = D(generated_images, training=True)
+        real_fake_output_logits_on_real_images, decoded_real_image, decoded_real_image_central_crop = D(
+            sle_gan.diff_augment(images, policy=diff_augmenter_policies), training=True)
+        real_fake_output_logits_on_fake_images, _, _ = D(
+            sle_gan.diff_augment(generated_images, policy=diff_augmenter_policies), training=True)
 
         # Generator loss
         G_loss = sle_gan.generator_loss(real_fake_output_logits_on_fake_images=real_fake_output_logits_on_fake_images)

@@ -68,6 +68,10 @@ D_real_fake_loss_metric = tf.keras.metrics.Mean()
 D_I_reconstruction_loss_metric = tf.keras.metrics.Mean()
 D_I_part_reconstruction_loss_metric = tf.keras.metrics.Mean()
 
+diff_augment_policies = None
+if args.diff_augment:
+    diff_augment_policies = "color,translation,cutout"
+
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
     for step, image_batch in enumerate(dataset):
@@ -77,7 +81,8 @@ for epoch in range(EPOCHS):
             G_optimizer=G_optimizer,
             D_optimizer=D_optimizer,
             images=image_batch,
-            inject_gaussian_noise=True)
+            inject_gaussian_noise=True,
+            diff_augmenter_policies=diff_augment_policies)
 
         G_loss_metric(G_loss)
         D_loss_metric(D_loss)
@@ -87,10 +92,10 @@ for epoch in range(EPOCHS):
 
         if step % 100 == 0 and step != 0:
             print(f"\tStep {step} - "
-                  f"G loss {G_loss_metric.result():.4f}, "
-                  f"D loss {D_loss_metric.result():.4f}, "
-                  f"D realfake loss {D_real_fake_loss_metric.result():.4f}, "
-                  f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} "
+                  f"G loss {G_loss_metric.result():.4f} | "
+                  f"D loss {D_loss_metric.result():.4f} | "
+                  f"D realfake loss {D_real_fake_loss_metric.result():.4f} | "
+                  f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
                   f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
 
     tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch)
@@ -100,10 +105,10 @@ for epoch in range(EPOCHS):
     tf.summary.scalar("D_loss/D_I_part_reconstruction_loss", D_I_part_reconstruction_loss_metric.result(), epoch)
 
     print(f"Epoch {epoch} - "
-          f"G loss {G_loss_metric.result():.4f}, "
-          f"D loss {D_loss_metric.result():.4f}, "
-          f"D realfake loss {D_real_fake_loss_metric.result():.4f}, "
-          f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} "
+          f"G loss {G_loss_metric.result():.4f} | "
+          f"D loss {D_loss_metric.result():.4f} | "
+          f"D realfake loss {D_real_fake_loss_metric.result():.4f} | "
+          f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
           f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
 
     G_loss_metric.reset_states()
