@@ -58,6 +58,7 @@ G_optimizer = tf.optimizers.Adam(learning_rate=LR)
 D_optimizer = tf.optimizers.Adam(learning_rate=LR)
 
 test_input_for_generation = sle_gan.create_input_noise(4)
+test_images = sle_gan.get_test_images(4, DATA_FOLDER, RESOLUTION)
 
 tb_file_writer = tf.summary.create_file_writer(str(logs_folder))
 tb_file_writer.set_as_default()
@@ -75,7 +76,7 @@ if args.diff_augment:
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
     for step, image_batch in enumerate(dataset):
-        G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = sle_gan.train_step(
+        G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = sle_gan.train_step_v2(
             G=G,
             D=D,
             G_optimizer=G_optimizer,
@@ -121,3 +122,4 @@ for epoch in range(EPOCHS):
     D.save_weights(str(checkpoints_folder / "D_checkpoint.h5"))
 
     sle_gan.generate_and_save_images(G, epoch, test_input_for_generation, experiments_folder)
+    sle_gan.reconstructions(D, epoch, test_images, experiments_folder)
