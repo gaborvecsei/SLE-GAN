@@ -85,7 +85,7 @@ for epoch in range(EPOCHS):
         D_I_reconstruction_loss_metric(D_I_reconstruction_loss)
         D_I_part_reconstruction_loss_metric(D_I_part_reconstruction_loss)
 
-        if step % 100 == 0:
+        if step % 100 == 0 and step != 0:
             print(f"\tStep {step} - "
                   f"G loss {G_loss_metric.result():.4f}, "
                   f"D loss {D_loss_metric.result():.4f}, "
