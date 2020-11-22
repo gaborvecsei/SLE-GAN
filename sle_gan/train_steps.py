@@ -4,14 +4,21 @@ import sle_gan
 
 
 @tf.function
-def train_step(G, D, G_optimizer, D_optimizer, images) -> tuple:
+def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bool = False) -> tuple:
     batch_size = tf.shape(images)[0]
+
     # Input for the generator
     noise_input = sle_gan.create_input_noise(batch_size)
+
     # Images for the I_{part} reconstruction loss
-    images_batch_center_crop_128 = tf.image.central_crop(images, 0.5)
+    images_batch_center_crop_128 = sle_gan.center_crop_images(images, 128)
+
     # Images for the I reconstruction loss
     image_batch_128 = tf.image.resize(images, (128, 128))
+
+    if inject_gaussian_noise:
+        # This is needed, so the generator can learn and the discriminator won't get too confident
+        images = images + tf.random.normal(shape=tf.shape(images), mean=0, stddev=1.0)
 
     with tf.GradientTape() as tape_G, tf.GradientTape() as tape_D:
         generated_images = G(noise_input, training=True)
@@ -35,9 +42,9 @@ def train_step(G, D, G_optimizer, D_optimizer, images) -> tuple:
         D_loss = D_real_fake_loss + D_I_reconstruction_loss + D_I_part_reconstruction_loss
 
     G_gradients = tape_G.gradient(G_loss, G.trainable_variables)
-    D_gradients = tape_D.gradient(D_loss, D.trainable_variables)
-
     G_optimizer.apply_gradients(zip(G_gradients, G.trainable_variables))
+
+    D_gradients = tape_D.gradient(D_loss, D.trainable_variables)
     D_optimizer.apply_gradients(zip(D_gradients, D.trainable_variables))
 
     return G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss

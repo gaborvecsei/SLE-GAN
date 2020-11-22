@@ -76,7 +76,8 @@ for epoch in range(EPOCHS):
             D=D,
             G_optimizer=G_optimizer,
             D_optimizer=D_optimizer,
-            images=image_batch)
+            images=image_batch,
+            inject_gaussian_noise=True)
 
         G_loss_metric(G_loss)
         D_loss_metric(D_loss)

@@ -6,6 +6,8 @@ def discriminator_reconstruction_loss(real_image, decoded_image):
 
 
 def discriminator_real_fake_loss(real_fake_output_logits_on_real_images, real_fake_output_logits_on_fake_images):
+    # TODO: add label smoothing
+    
     real_loss = tf.minimum(0.0, -1 + real_fake_output_logits_on_real_images)
     real_loss = -1 * tf.reduce_mean(real_loss)
 

@@ -118,6 +118,7 @@ class SimpleDecoder(tf.keras.layers.Layer):
         x = inputs
         for decoder_block in self.decoder_blocks:
             x = decoder_block(x)
+        x = tf.nn.tanh(x)
         return x
 
 
