@@ -91,7 +91,7 @@ def train_step_v2(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise:
     with tf.GradientTape() as tape_G:
         generated_images = G(noise_input, training=True)
         real_fake_output_logits_on_fake_images, _, _ = D(
-            sle_gan.diff_augment(generated_images, policy=diff_augmenter_policies), training=True)
+            sle_gan.diff_augment(generated_images, policy=diff_augmenter_policies), training=False)
         G_loss = sle_gan.generator_loss(real_fake_output_logits_on_fake_images=real_fake_output_logits_on_fake_images)
 
     G_gradients = tape_G.gradient(G_loss, G.trainable_variables)

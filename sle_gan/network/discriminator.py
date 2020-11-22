@@ -86,10 +86,10 @@ class DownSamplingBlock(tf.keras.layers.Layer):
 
 
 class SimpleDecoderBlock(tf.keras.layers.Layer):
-    def __init__(self, filters, **kwargs):
+    def __init__(self, output_filters, **kwargs):
         super().__init__(**kwargs)
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
-        self.conv = tf.keras.layers.Conv2D(filters=filters, kernel_size=3, padding="same")
+        self.conv = tf.keras.layers.Conv2D(filters=output_filters * 2, kernel_size=3, padding="same")
         self.normalization = tf.keras.layers.BatchNormalization()
         self.glu = GLU()
 
@@ -105,13 +105,15 @@ class SimpleDecoder(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
-        self.decoder_block_filter_sizes = [32, 16, 8, 6]
-        self.decoder_blocks = [SimpleDecoderBlock(filters=x) for x in self.decoder_block_filter_sizes]
+        self.decoder_block_filter_sizes = [256, 128, 128, 64]
+        self.decoder_blocks = [SimpleDecoderBlock(output_filters=x) for x in self.decoder_block_filter_sizes]
+        self.conv_output = tf.keras.layers.Conv2D(3, 1, 1, padding="same", use_bias=False)
 
     def call(self, inputs, **kwargs):
         x = inputs
         for decoder_block in self.decoder_blocks:
             x = decoder_block(x)
+        x = self.conv_output(x)
         x = tf.nn.tanh(x)
         return x
 
