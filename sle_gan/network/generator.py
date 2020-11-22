@@ -17,8 +17,7 @@ class InputBlock(tf.keras.layers.Layer):
 
         self.conv2d_transpose = tf.keras.layers.Conv2DTranspose(filters=filters * 2,
                                                                 kernel_size=(4, 4),
-                                                                strides=(1, 1),
-                                                                use_bias=False)
+                                                                strides=(1, 1))
         self.normalization = tf.keras.layers.BatchNormalization()
         self.glu = GLU()
 
@@ -68,11 +67,13 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
         self.pooling = tfa.layers.AdaptiveAveragePooling2D(output_size=(4, 4), data_format="channels_last")
         self.conv2d_1 = tf.keras.layers.Conv2D(filters=input_low_res_filters,
                                                kernel_size=(4, 4),
+                                               strides=1,
                                                padding="valid")
         self.leaky_relu = tf.keras.layers.LeakyReLU(alpha=0.1)
         self.conv2d_2 = tf.keras.layers.Conv2D(filters=input_high_res_filters,
                                                kernel_size=(1, 1),
-                                               padding="same")
+                                               strides=1,
+                                               padding="valid")
 
     def call(self, inputs, **kwargs):
         x_low, x_high = inputs
@@ -89,7 +90,7 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
 class OutputBlock(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.conv = tf.keras.layers.Conv2D(filters=3, kernel_size=3, padding="same")
+        self.conv = tf.keras.layers.Conv2D(filters=3, kernel_size=3, strides=1, padding="same")
 
     def call(self, inputs, **kwargs):
         x = self.conv(inputs)
@@ -132,7 +133,7 @@ class Generator(tf.keras.models.Model):
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.input_block(inputs)  # --> (B, 4, 4, 256)
+        x = self.input_block(inputs)  # --> (B, 4, 4, 1024)
 
         x_8 = self.upsample_8(x)  # --> (B, 8, 8, 512)
         x_16 = self.upsample_16(x_8)  # --> (B, 16, 16, 256)

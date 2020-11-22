@@ -73,20 +73,16 @@ diff_augment_policies = None
 if args.diff_augment:
     diff_augment_policies = "color,translation,cutout"
 
-train_step_fn = sle_gan.train_step
-if args.v == 2:
-    train_step_fn = sle_gan.train_step_v2
-
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
     for step, image_batch in enumerate(dataset):
-        G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = train_step_fn(
+        G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = sle_gan.train_step(
             G=G,
             D=D,
             G_optimizer=G_optimizer,
             D_optimizer=D_optimizer,
             images=image_batch,
-            inject_gaussian_noise=True,
+            inject_gaussian_noise=False,
             diff_augmenter_policies=diff_augment_policies)
 
         G_loss_metric(G_loss)

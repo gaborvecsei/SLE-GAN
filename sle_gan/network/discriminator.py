@@ -107,7 +107,7 @@ class SimpleDecoder(tf.keras.layers.Layer):
 
         self.decoder_block_filter_sizes = [256, 128, 128, 64]
         self.decoder_blocks = [SimpleDecoderBlock(output_filters=x) for x in self.decoder_block_filter_sizes]
-        self.conv_output = tf.keras.layers.Conv2D(3, 1, 1, padding="same", use_bias=False)
+        self.conv_output = tf.keras.layers.Conv2D(3, 1, 1, padding="same")
 
     def call(self, inputs, **kwargs):
         x = inputs
