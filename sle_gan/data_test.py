@@ -6,9 +6,8 @@ import numpy as np
 class TestData(unittest.TestCase):
     def setUp(self) -> None:
         self.batch_size = 4
-        self.dataset = sle_gan.create_dataset(self.batch_size, "../dataset")
+        self.dataset = sle_gan.create_dataset(self.batch_size, "../dataset", resolution=1024)
 
-        # TODO: This should be done with more elegance
         self.image_batch = None
         for x in self.dataset.take(1):
             self.image_batch = x

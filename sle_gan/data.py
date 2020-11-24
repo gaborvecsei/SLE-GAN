@@ -58,3 +58,32 @@ def create_dataset(batch_size: int,
     dataset = dataset.map(partial(preprocess_images, resolution=resolution))
     dataset = dataset.shuffle(buffer_size=shuffle_buffer_size).batch(batch_size).prefetch(tf.data.experimental.AUTOTUNE)
     return dataset
+
+
+def center_crop_images(images, crop_resolution: int):
+    """
+    Crops the center of the images
+    Args:
+        images: shape: (B, H, W, 3), H should be equal to W
+        crop_resolution: target resolution for the crop
+
+    Returns:
+        cropped images which has the shape: (B, crop_resolution, crop_resolution, 3)
+    """
+
+    crop_resolution = tf.cast(crop_resolution, tf.float32)
+    half_of_crop_resolution = crop_resolution / 2
+    image_height = tf.cast(tf.shape(images)[1], tf.float32)
+    image_center = image_height / 2
+
+    from_ = int(image_center - half_of_crop_resolution)
+    to_ = int(image_center + half_of_crop_resolution)
+
+    return images[:, from_:to_, from_:to_, :]
+
+
+def get_test_images(batch_size: int, folder: str, resolution: int):
+    dataset = create_dataset(batch_size, str(folder), resolution=resolution, use_flip_augmentation=False,
+                             shuffle_buffer_size=1)
+    for x in dataset.take(1):
+        return x

@@ -1,12 +1,12 @@
 import shutil
 from pathlib import Path
 
+import tensorflow as tf
+
 import sle_gan
 
 args = sle_gan.get_args()
 print(args)
-
-import tensorflow as tf
 
 # For debugging:
 # tf.config.experimental_run_functions_eagerly(True)
@@ -58,6 +58,7 @@ G_optimizer = tf.optimizers.Adam(learning_rate=LR)
 D_optimizer = tf.optimizers.Adam(learning_rate=LR)
 
 test_input_for_generation = sle_gan.create_input_noise(4)
+test_images = sle_gan.get_test_images(4, DATA_FOLDER, RESOLUTION)
 
 tb_file_writer = tf.summary.create_file_writer(str(logs_folder))
 tb_file_writer.set_as_default()
@@ -68,6 +69,10 @@ D_real_fake_loss_metric = tf.keras.metrics.Mean()
 D_I_reconstruction_loss_metric = tf.keras.metrics.Mean()
 D_I_part_reconstruction_loss_metric = tf.keras.metrics.Mean()
 
+diff_augment_policies = None
+if args.diff_augment:
+    diff_augment_policies = "color,translation,cutout"
+
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
     for step, image_batch in enumerate(dataset):
@@ -76,7 +81,9 @@ for epoch in range(EPOCHS):
             D=D,
             G_optimizer=G_optimizer,
             D_optimizer=D_optimizer,
-            images=image_batch)
+            images=image_batch,
+            inject_gaussian_noise=False,
+            diff_augmenter_policies=diff_augment_policies)
 
         G_loss_metric(G_loss)
         D_loss_metric(D_loss)
@@ -84,12 +91,12 @@ for epoch in range(EPOCHS):
         D_I_reconstruction_loss_metric(D_I_reconstruction_loss)
         D_I_part_reconstruction_loss_metric(D_I_part_reconstruction_loss)
 
-        if step % 100 == 0:
+        if step % 100 == 0 and step != 0:
             print(f"\tStep {step} - "
-                  f"G loss {G_loss_metric.result():.4f}, "
-                  f"D loss {D_loss_metric.result():.4f}, "
-                  f"D realfake loss {D_real_fake_loss_metric.result():.4f}, "
-                  f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} "
+                  f"G loss {G_loss_metric.result():.4f} | "
+                  f"D loss {D_loss_metric.result():.4f} | "
+                  f"D realfake loss {D_real_fake_loss_metric.result():.4f} | "
+                  f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
                   f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
 
     tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch)
@@ -99,10 +106,10 @@ for epoch in range(EPOCHS):
     tf.summary.scalar("D_loss/D_I_part_reconstruction_loss", D_I_part_reconstruction_loss_metric.result(), epoch)
 
     print(f"Epoch {epoch} - "
-          f"G loss {G_loss_metric.result():.4f}, "
-          f"D loss {D_loss_metric.result():.4f}, "
-          f"D realfake loss {D_real_fake_loss_metric.result():.4f}, "
-          f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} "
+          f"G loss {G_loss_metric.result():.4f} | "
+          f"D loss {D_loss_metric.result():.4f} | "
+          f"D realfake loss {D_real_fake_loss_metric.result():.4f} | "
+          f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
           f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
 
     G_loss_metric.reset_states()
@@ -115,3 +122,4 @@ for epoch in range(EPOCHS):
     D.save_weights(str(checkpoints_folder / "D_checkpoint.h5"))
 
     sle_gan.generate_and_save_images(G, epoch, test_input_for_generation, experiments_folder)
+    sle_gan.reconstructions(D, epoch, test_images, experiments_folder)
