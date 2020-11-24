@@ -80,7 +80,6 @@ for epoch in range(EPOCHS):
             G_optimizer=G_optimizer,
             D_optimizer=D_optimizer,
             images=image_batch,
-            inject_gaussian_noise=False,
             diff_augmenter_policies=diff_augment_policies)
 
         G_loss_metric(G_loss)

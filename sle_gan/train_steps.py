@@ -4,8 +4,7 @@ import sle_gan
 
 
 @tf.function
-def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bool = False,
-               diff_augmenter_policies: str = None) -> tuple:
+def train_step(G, D, G_optimizer, D_optimizer, images, diff_augmenter_policies: str = None) -> tuple:
     batch_size = tf.shape(images)[0]
 
     # Images for the I_{part} reconstruction loss
@@ -13,10 +12,6 @@ def train_step(G, D, G_optimizer, D_optimizer, images, inject_gaussian_noise: bo
 
     # Images for the I reconstruction loss
     image_batch_128 = tf.image.resize(images, (128, 128))
-
-    if inject_gaussian_noise:
-        # This is needed, so the generator can learn and the discriminator won't get too confident
-        images = images + tf.random.normal(shape=tf.shape(images), mean=0, stddev=1.0)
 
     with tf.GradientTape() as tape_G, tf.GradientTape() as tape_D:
         noise_input = sle_gan.create_input_noise(batch_size)
