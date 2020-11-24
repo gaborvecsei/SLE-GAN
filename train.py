@@ -36,24 +36,20 @@ dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, reso
                                  use_flip_augmentation=True, shuffle_buffer_size=500)
 
 G = sle_gan.Generator(RESOLUTION)
-try:
-    G.load_weights(str(checkpoints_folder / "G_checkpoint.h5"))
-    print("Weights are loadaed for G")
-except:
-    pass
 sample_G_output = G.initialize(BATCH_SIZE)
-print(f"[G] output shape: {sample_G_output.shape}")
+if args.generator_weights is not None:
+    G.load_weights(args.generator_weights)
+    print("Weights are loaded for G")
+print(f"[Model G] output shape: {sample_G_output.shape}")
 
 D = sle_gan.Discriminator(RESOLUTION)
-try:
-    D.load_weights(str(checkpoints_folder / "D_checkpoint.h5"))
-    print("Weights are loadaed for D")
-except:
-    pass
 sample_D_output = D.initialize(BATCH_SIZE)
-print(f"[D] real_fake output shape: {sample_D_output[0].shape}")
-print(f"[D] image output shape{sample_D_output[1].shape}")
-print(f"[D] image part output shape{sample_D_output[2].shape}")
+if args.discriminator_weights is not None:
+    D.load_weights(str(checkpoints_folder / "D_checkpoint.h5"))
+    print("Weights are loaded for D")
+print(f"[Model D] real_fake output shape: {sample_D_output[0].shape}")
+print(f"[Model D] image output shape{sample_D_output[1].shape}")
+print(f"[Model D] image part output shape{sample_D_output[2].shape}")
 
 G_optimizer = tf.optimizers.Adam(learning_rate=LR)
 D_optimizer = tf.optimizers.Adam(learning_rate=LR)
@@ -120,6 +116,7 @@ for epoch in range(EPOCHS):
     D_I_part_reconstruction_loss_metric.reset_states()
     D_I_reconstruction_loss_metric.reset_states()
 
+    # TODO: save weights only when the FID score gets better
     G.save_weights(str(checkpoints_folder / "G_checkpoint.h5"))
     D.save_weights(str(checkpoints_folder / "D_checkpoint.h5"))
 
