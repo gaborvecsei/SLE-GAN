@@ -1,7 +1,5 @@
 .idea/
 __pycache__/
+
 dataset/
 logs/
-test.py
-checkpoints/
-

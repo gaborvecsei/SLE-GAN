@@ -73,7 +73,7 @@ if args.diff_augment:
 
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
-    for step, image_batch in enumerate(dataset.take(3)):
+    for step, image_batch in enumerate(dataset):
         G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = sle_gan.train_step(
             G=G,
             D=D,
