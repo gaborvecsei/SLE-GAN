@@ -119,10 +119,10 @@ class SimpleDecoder(tf.keras.layers.Layer):
 
 
 class RealFakeOutputBlock(tf.keras.layers.Layer):
-    def __init__(self, **kwargs):
+    def __init__(self, filters: int, **kwargs):
         super().__init__(**kwargs)
 
-        self.conv_1 = tf.keras.layers.Conv2D(filters=8, kernel_size=1)
+        self.conv_1 = tf.keras.layers.Conv2D(filters=filters, kernel_size=1)
         self.normalization = tf.keras.layers.BatchNormalization()
         self.activation = tf.keras.layers.LeakyReLU(0.1)
         self.conv_2 = tf.keras.layers.Conv2D(filters=1, kernel_size=4)
@@ -142,19 +142,20 @@ class Discriminator(tf.keras.models.Model):
         self.input_resolution = input_resolution
 
         downsampling_factor_dict = {256: 1, 512: 2, 1024: 4}
-        self.input_block = InputBlock(filters=8, downsampling_factor=downsampling_factor_dict[
-            input_resolution])
+        input_block_filters_dict = {256: 8, 512: 16, 1024: 32}
+        self.input_block = InputBlock(filters=input_block_filters_dict[input_resolution],
+                                      downsampling_factor=downsampling_factor_dict[input_resolution])
 
-        self.downsample_128 = DownSamplingBlock(filters=16)
-        self.downsample_64 = DownSamplingBlock(filters=32)
-        self.downsample_32 = DownSamplingBlock(filters=64)
-        self.downsample_16 = DownSamplingBlock(filters=64)
-        self.downsample_8 = DownSamplingBlock(filters=128)
+        self.downsample_128 = DownSamplingBlock(filters=64)
+        self.downsample_64 = DownSamplingBlock(filters=128)
+        self.downsample_32 = DownSamplingBlock(filters=128)
+        self.downsample_16 = DownSamplingBlock(filters=256)
+        self.downsample_8 = DownSamplingBlock(filters=512)
 
         self.decoder_image_part = SimpleDecoder()
         self.decoder_image = SimpleDecoder()
 
-        self.real_fake_output = RealFakeOutputBlock()
+        self.real_fake_output = RealFakeOutputBlock(filters=256)
 
     def initialize(self, batch_size: int = 1):
         sample_input = tf.random.uniform(shape=(batch_size, self.input_resolution, self.input_resolution, 3), minval=0,
@@ -164,13 +165,13 @@ class Discriminator(tf.keras.models.Model):
 
     @tf.function
     def call(self, inputs, training=None, mask=None):
-        x = self.input_block(inputs)  # --> (B, 256, 256, 16)
+        x = self.input_block(inputs)  # --> (B, 256, 256, F)
 
-        x = self.downsample_128(x)  # --> (B, 128, 128, 16)
-        x = self.downsample_64(x)  # --> (B, 64, 64, 32)
-        x = self.downsample_32(x)  # --> (B, 32, 32, 64)
-        x_16 = self.downsample_16(x)  # --> (B, 16, 16, 64)
-        x_8 = self.downsample_8(x_16)  # --> (B, 8, 8, 128)
+        x = self.downsample_128(x)  # --> (B, 128, 128, 64)
+        x = self.downsample_64(x)  # --> (B, 64, 64, 128)
+        x = self.downsample_32(x)  # --> (B, 32, 32, 128)
+        x_16 = self.downsample_16(x)  # --> (B, 16, 16, 256)
+        x_8 = self.downsample_8(x_16)  # --> (B, 8, 8, 512)
 
         # TODO: instead of just center cropping implement random cropping
         center_cropped_x_16 = center_crop_images(x_16, 8)  # --> (B, 8, 8, 64)
