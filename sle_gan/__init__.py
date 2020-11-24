@@ -5,4 +5,4 @@ from .losses import generator_loss, discriminator_reconstruction_loss, discrimin
 from .network.discriminator import Discriminator
 from .network.generator import Generator
 from .train_steps import train_step
-from .visualization import generate_and_save_images, reconstructions
+from .visualization import visualize_and_save_images
