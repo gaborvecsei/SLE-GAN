@@ -3,7 +3,7 @@
 *Unofficial implementation*, with understandability in mind (verbose implementation)
 
 <img src="art/flower_interpolation_512.png" width="400"></a> <img src="art/generated_flowers_512.png" width="400"></a>
-*512x512 generated images trained for 9 hours with batch size of 8 on [Oxford 17 flowers dataset](https://www.robots.ox.ac.uk/~vgg/data/flowers/17/index.html)
+*512x512 generated images (randomly selected) trained for 9 hours with batch size of 8 on [Oxford 17 flowers dataset](https://www.robots.ox.ac.uk/~vgg/data/flowers/17/index.html)
 which contains only 1360 images*
 
 - [Paper](https://openreview.net/forum?id=1Fqg133qRaI)
