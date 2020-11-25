@@ -2,15 +2,16 @@
 
 *Unofficial implementation*, with understandability in mind (verbose implementation)
 
+<img src="art/flower_interpolation_512.png" width="400"></a> <img src="art/generated_flowers_512.png" width="400"></a>
+*512x512 generated images trained for 9 hours with batch size of 8 on [Oxford 17 flowers dataset](https://www.robots.ox.ac.uk/~vgg/data/flowers/17/index.html)
+which contains only 1360 images*
+
 - [Paper](https://openreview.net/forum?id=1Fqg133qRaI)
 
-The implementation tries to replicate the results from the paper.
+The implementation tries to replicate the results from the paper based only on the publication.
+
 What is not discussed in the paper (e.g. filter sizes, training scheduling, hyper parameters), is chosen based on some
 experiments and previous knowledge.
-
-## Results
-
-Coming soon
 
 ## Train
 
@@ -43,9 +44,9 @@ optional arguments:
 
 ## Todos
 
-
 - Work with various image extensions not just `jpg`
 - Add a docker image and requirements
+- Name network layers
 - Evaluation (*FID score*) when training
 - More advanced training schedule (e.g. learning rate scheduling and initial hyper parameters)
 - Random cropping `I_{part}` (right now it is center crop) for the Discriminator
