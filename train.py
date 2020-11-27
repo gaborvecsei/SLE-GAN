@@ -7,7 +7,7 @@ import tensorflow as tf
 import sle_gan
 
 args = sle_gan.get_args()
-print(dict(args))
+print(args)
 
 # For debugging:
 # tf.config.experimental_run_functions_eagerly(True)
