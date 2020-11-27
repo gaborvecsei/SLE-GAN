@@ -7,7 +7,7 @@ import tensorflow as tf
 import sle_gan
 
 args = sle_gan.get_args()
-print(args)
+print(dict(args))
 
 # For debugging:
 # tf.config.experimental_run_functions_eagerly(True)
@@ -29,7 +29,6 @@ logs_folder.mkdir(parents=True)
 RESOLUTION = args.resolution
 BATCH_SIZE = args.batch_size
 EPOCHS = args.epochs
-LR = args.learning_rate
 DATA_FOLDER = args.data_folder
 
 dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, resolution=RESOLUTION,
@@ -51,8 +50,8 @@ print(f"[Model D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[Model D] image output shape{sample_D_output[1].shape}")
 print(f"[Model D] image part output shape{sample_D_output[2].shape}")
 
-G_optimizer = tf.optimizers.Adam(learning_rate=LR)
-D_optimizer = tf.optimizers.Adam(learning_rate=LR)
+G_optimizer = tf.optimizers.Adam(learning_rate=args.G_learning_rate)
+D_optimizer = tf.optimizers.Adam(learning_rate=args.D_learning_rate)
 
 test_input_size = 25
 test_input_for_generation = sle_gan.create_input_noise(test_input_size)
