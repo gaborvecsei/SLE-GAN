@@ -12,7 +12,8 @@ def get_args():
     parser.add_argument("--discriminator-weights", type=str, default=None)
     parser.add_argument("--batch-size", type=int, default=1)
     parser.add_argument("--epochs", type=int, default=1000)
-    parser.add_argument("--learning-rate", type=float, default=2e-4, help="Learning rate for both G and D")
+    parser.add_argument("--G-learning-rate", type=float, default=2e-4, help="Learning rate for the Generator")
+    parser.add_argument("--D-learning-rate", type=float, default=2e-4, help="Learning rate for the Discriminator")
     parser.add_argument("--diff-augment", action="store_true", help="Apply diff augmentation")
     args = parser.parse_args()
     return args
