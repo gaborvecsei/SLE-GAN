@@ -9,8 +9,6 @@ from scipy import linalg
 def read_images(image_path):
     image = tf.io.read_file(image_path)
     image = tf.image.decode_jpeg(image)
-    # TODO: should we resize?
-    image = image[..., 1:]
     image = tf.cast(image, tf.float32)
     image = tf.keras.applications.inception_v3.preprocess_input(image)
     return image
@@ -90,12 +88,3 @@ def get_fid_score(real_paths: list,
     fid_score = calculate_fid_score(real_mu, real_sigma, fake_mu, fake_sigma)
 
     return fid_score
-
-
-# real_paths = list(Path("../../asdasd/real").glob("*.png"))
-# real_paths = list(map(str, real_paths))
-#
-# fake_paths = list(Path("../../asdasd/fake").glob("*.png"))
-# fake_paths = list(map(str, fake_paths))
-# fid = get_fid_score(real_paths, fake_paths, 1, 100, 100)
-# print(fid)
