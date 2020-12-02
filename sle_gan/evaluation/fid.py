@@ -43,7 +43,7 @@ def get_encoding_statistics(encodings):
     return mu, sigma
 
 
-def calculate_fid_score(real_mu, real_sigma, fake_mu, fake_sigma):
+def calculate_fid_score_from_mu_and_sigma(real_mu, real_sigma, fake_mu, fake_sigma):
     ssdiff = np.sum((real_mu - fake_mu) ** 2.0)
     covmean = linalg.sqrtm(real_sigma.dot(fake_sigma))
     if np.iscomplexobj(covmean):
@@ -65,7 +65,7 @@ class InceptionModel(tf.keras.models.Model):
         return self.model(inputs, training=False)
 
 
-def get_fid_score(real_paths: list,
+def calculate_FID(real_paths: list,
                   fake_paths: list,
                   batch_size: int = 1,
                   image_height: int = None,
@@ -85,6 +85,6 @@ def get_fid_score(real_paths: list,
     fake_encodings = get_encodings(model, fake_dataset, nb_of_images)
     fake_mu, fake_sigma = get_encoding_statistics(fake_encodings)
 
-    fid_score = calculate_fid_score(real_mu, real_sigma, fake_mu, fake_sigma)
+    fid_score = calculate_fid_score_from_mu_and_sigma(real_mu, real_sigma, fake_mu, fake_sigma)
 
     return fid_score

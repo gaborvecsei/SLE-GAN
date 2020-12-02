@@ -1,7 +1,6 @@
 import shutil
 from pathlib import Path
 
-import numpy as np
 import tensorflow as tf
 
 import sle_gan
@@ -95,6 +94,17 @@ for epoch in range(EPOCHS):
                   f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
                   f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
 
+    if args.fid:
+        if epoch % args.fid_frequency == 0:
+            fid_score = sle_gan.evaluation_step(dataset=dataset,
+                                                G=G,
+                                                batch_size=BATCH_SIZE,
+                                                image_height=RESOLUTION,
+                                                image_width=RESOLUTION,
+                                                nb_of_images_to_use=args.fid_number_of_images)
+            print(f"[FID] {fid_score:.2f}")
+            tf.summary.scalar("FID_score", fid_score, epoch)
+
     tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch)
     tf.summary.scalar("D_loss/D_loss", D_loss_metric.result(), epoch)
     tf.summary.scalar("D_loss/D_real_fake_loss", D_real_fake_loss_metric.result(), epoch)
@@ -120,13 +130,15 @@ for epoch in range(EPOCHS):
 
     # Generate test images
     generated_images = G(test_input_for_generation, training=False)
-    generated_images = sle_gan.postprocess_images(generated_images).numpy().astype(np.uint8)
-    sle_gan.visualize_and_save_images(epoch, generated_images, experiments_folder / "generated_images", 5, 5)
+    generated_images = sle_gan.postprocess_images(generated_images, dtype=tf.uint8).numpy()
+    sle_gan.visualize_images_on_grid_and_save(epoch, generated_images, experiments_folder / "generated_images",
+                                              5, 5)
 
     # Generate reconstructions from Discriminator
     _, decoded_images, decoded_part_images = D(test_images, training=False)
-    decoded_images = sle_gan.postprocess_images(decoded_images).numpy().astype(np.uint8)
-    decoded_part_images = sle_gan.postprocess_images(decoded_part_images).numpy().astype(np.uint8)
-    sle_gan.visualize_and_save_images(epoch, decoded_images, experiments_folder / "reconstructed_whole_images", 5, 5)
-    sle_gan.visualize_and_save_images(epoch, decoded_part_images, experiments_folder / "reconstructed_part_images", 5,
-                                      5)
+    decoded_images = sle_gan.postprocess_images(decoded_images, dtype=tf.uint8).numpy()
+    decoded_part_images = sle_gan.postprocess_images(decoded_part_images, dtype=tf.uint8).numpy()
+    sle_gan.visualize_images_on_grid_and_save(epoch, decoded_images, experiments_folder / "reconstructed_whole_images",
+                                              5, 5)
+    sle_gan.visualize_images_on_grid_and_save(epoch, decoded_part_images,
+                                              experiments_folder / "reconstructed_part_images", 5, 5)
