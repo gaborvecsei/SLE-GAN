@@ -16,6 +16,23 @@ The implementation tries to replicate the results from the paper based only on t
 What is not discussed in the paper (e.g. filter sizes, training scheduling, hyper parameters), is chosen based on some
 experiments and previous knowledge.
 
+## Usage
+
+You can easily use the separate parts of the code. The `Generator` and `Discriminator` are Tensorflow Keras models (`tf.keras.models.Model`)
+
+For example if you'd like to generate new images:
+
+```python
+import sle_gan
+
+G = sle_gan.Generator(output_resolution=512)
+G.load_weights("generator_weights.h5")
+
+input_noise = sle_gan.create_input_noise(batch_size=1)
+generated_images = G(input_noise)
+generated_images = sle_gan.postprocess_images(generated_images, tf.uint8).numpy()
+```
+
 ## Train
 
 ```
@@ -47,13 +64,10 @@ optional arguments:
 
 ## Todos
 
-- Work with various image extensions not just `jpg`
 - Add a docker image and requirements
-- Name network layers
 - Evaluation (*FID score*) when training
 - More advanced training schedule (e.g. learning rate scheduling and initial hyper parameters)
 - Random cropping `I_{part}` (right now it is center crop) for the Discriminator
-- More exhausting tests for the Generator and Discriminator
 
 ## Citation
 
