@@ -48,7 +48,8 @@ def train_step(G, D, G_optimizer, D_optimizer, images, diff_augmenter_policies: 
     return G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss
 
 
-def evaluation_step(dataset: tf.data.Dataset,
+def evaluation_step(inception_model:tf.keras.models.Model,
+                    dataset: tf.data.Dataset,
                     G: tf.keras.models.Model,
                     batch_size: int,
                     image_height: int,
@@ -72,7 +73,8 @@ def evaluation_step(dataset: tf.data.Dataset,
         _, fake_images_file_paths = sle_gan.write_images_to_disk(fake_images, folder=None)
         fake_paths.extend(fake_images_file_paths)
 
-    fid_score = sle_gan.calculate_FID(real_paths,
+    fid_score = sle_gan.calculate_FID(inception_model,
+                                      real_paths,
                                       fake_paths,
                                       batch_size=batch_size,
                                       image_height=image_height,

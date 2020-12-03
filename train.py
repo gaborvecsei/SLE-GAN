@@ -52,6 +52,10 @@ print(f"[Model D] image part output shape{sample_D_output[2].shape}")
 G_optimizer = tf.optimizers.Adam(learning_rate=args.G_learning_rate)
 D_optimizer = tf.optimizers.Adam(learning_rate=args.D_learning_rate)
 
+if args.fid:
+    # Model for the FID calculation
+    fid_inception_model = sle_gan.InceptionModel(height=RESOLUTION, width=RESOLUTION)
+
 test_input_size = 25
 test_input_for_generation = sle_gan.create_input_noise(test_input_size)
 test_images = sle_gan.get_test_images(test_input_size, DATA_FOLDER, RESOLUTION)
@@ -96,7 +100,8 @@ for epoch in range(EPOCHS):
 
     if args.fid:
         if epoch % args.fid_frequency == 0:
-            fid_score = sle_gan.evaluation_step(dataset=dataset,
+            fid_score = sle_gan.evaluation_step(inception_model=fid_inception_model,
+                                                dataset=dataset,
                                                 G=G,
                                                 batch_size=BATCH_SIZE,
                                                 image_height=RESOLUTION,

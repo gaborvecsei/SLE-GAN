@@ -65,7 +65,8 @@ class InceptionModel(tf.keras.models.Model):
         return self.model(inputs, training=False)
 
 
-def calculate_FID(real_paths: list,
+def calculate_FID(inception_model,
+                  real_paths: list,
                   fake_paths: list,
                   batch_size: int = 1,
                   image_height: int = None,
@@ -75,14 +76,12 @@ def calculate_FID(real_paths: list,
     real_paths = real_paths[:nb_of_images]
     fake_paths = fake_paths[:nb_of_images]
 
-    model = InceptionModel(height=image_height, width=image_width)
-
     read_dataset = create_tmp_dataset(real_paths, batch_size, image_height, image_width)
-    real_encodings = get_encodings(model, read_dataset, nb_of_images)
+    real_encodings = get_encodings(inception_model, read_dataset, nb_of_images)
     real_mu, real_sigma = get_encoding_statistics(real_encodings)
 
     fake_dataset = create_tmp_dataset(fake_paths, batch_size, image_height, image_width)
-    fake_encodings = get_encodings(model, fake_dataset, nb_of_images)
+    fake_encodings = get_encodings(inception_model, fake_dataset, nb_of_images)
     fake_mu, fake_sigma = get_encoding_statistics(fake_encodings)
 
     fid_score = calculate_fid_score_from_mu_and_sigma(real_mu, real_sigma, fake_mu, fake_sigma)
