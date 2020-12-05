@@ -15,5 +15,9 @@ def get_args():
     parser.add_argument("--G-learning-rate", type=float, default=2e-4, help="Learning rate for the Generator")
     parser.add_argument("--D-learning-rate", type=float, default=2e-4, help="Learning rate for the Discriminator")
     parser.add_argument("--diff-augment", action="store_true", help="Apply diff augmentation")
+    parser.add_argument("--fid", action="store_true", help="If this is used, FID will be evaluated")
+    parser.add_argument("--fid-frequency", type=int, default=1, help="FID will be evaluated at this frequency (epochs)")
+    parser.add_argument("--fid-number-of-images", type=int, default=128,
+                        help="This many images will be used for the FID calculation")
     args = parser.parse_args()
     return args
