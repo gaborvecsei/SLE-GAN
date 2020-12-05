@@ -43,7 +43,10 @@ usage: train.py [-h] [--name NAME] [--override] --data-folder DATA_FOLDER
                 [--generator-weights GENERATOR_WEIGHTS]
                 [--discriminator-weights DISCRIMINATOR_WEIGHTS]
                 [--batch-size BATCH_SIZE] [--epochs EPOCHS]
-                [--learning-rate LEARNING_RATE] [--diff-augment]
+                [--G-learning-rate G_LEARNING_RATE]
+                [--D-learning-rate D_LEARNING_RATE] [--diff-augment] [--fid]
+                [--fid-frequency FID_FREQUENCY]
+                [--fid-number-of-images FID_NUMBER_OF_IMAGES]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -57,19 +60,41 @@ optional arguments:
   --discriminator-weights DISCRIMINATOR_WEIGHTS
   --batch-size BATCH_SIZE
   --epochs EPOCHS
-  --learning-rate LEARNING_RATE
-                        Learning rate for both G and D
+  --G-learning-rate G_LEARNING_RATE
+                        Learning rate for the Generator
+  --D-learning-rate D_LEARNING_RATE
+                        Learning rate for the Discriminator
   --diff-augment        Apply diff augmentation
+  --fid                 If this is used, FID will be evaluated
+  --fid-frequency FID_FREQUENCY
+                        FID will be evaluated at this frequency (epochs)
+  --fid-number-of-images FID_NUMBER_OF_IMAGES
+                        This many images will be used for the FID calculation
 ```
 
-## Todos
+FID score calculation can be enabled with the `--fid` flag. Just pay attention that as the caluclation uses
+the Inception model, you need some extra GPU memory.
 
-- Add a docker image and requirements
-- Evaluation (*FID score*) when training
-- More advanced training schedule (e.g. learning rate scheduling and initial hyper parameters)
-- Random cropping `I_{part}` (right now it is center crop) for the Discriminator
+Example train command:
 
-## Citation
+```
+$ python train.py --name experiment_1 --resolution 512 --batch-size 8 --diff-augment --fid --fid-number-of-images 256
+```
+
+## Differences from the paper
+
+- Instead of random cropping to get `I_{part}` now only center cropping is implemented
+- Optionally you can use [Differentiable Augmentations](https://arxiv.org/abs/2006.10738) (`--diff-augment`)
+
+### Not mentioned in the paper
+
+In these cases I took the freedom and defined these myself based on previous experience
+
+- Number of filters in the Generator and Discriminator
+- How they change the architecture for resolutions `256`, `1024` (or any other resolution)
+- Training schedule, or any hyperparameter connected to the training
+
+## Citations
 
 ```bibtex
 @inproceedings{
@@ -80,5 +105,17 @@ optional arguments:
     year={2021},
     url={https://openreview.net/forum?id=1Fqg133qRaI},
     note={under review}
+}
+```
+
+```bibtex
+@misc{
+      zhao2020differentiable,
+      title={Differentiable Augmentation for Data-Efficient GAN Training}, 
+      author={Shengyu Zhao and Zhijian Liu and Ji Lin and Jun-Yan Zhu and Song Han},
+      year={2020},
+      eprint={2006.10738},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV}
 }
 ```
