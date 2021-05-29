@@ -12,7 +12,7 @@ print(args)
 # tf.config.experimental_run_functions_eagerly(True)
 
 physical_devices = tf.config.list_physical_devices("GPU")
-_ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
+#_ = [tf.config.experimental.set_memory_growth(x, True) for x in physical_devices]
 
 experiments_folder = Path("logs") / args.name
 if experiments_folder.is_dir():
@@ -35,22 +35,30 @@ dataset = sle_gan.create_dataset(batch_size=BATCH_SIZE, folder=DATA_FOLDER, reso
 
 G = sle_gan.Generator(RESOLUTION)
 sample_G_output = G.initialize(BATCH_SIZE)
-if args.generator_weights is not None:
-    G.load_weights(args.generator_weights)
-    print("Weights are loaded for G")
+
 print(f"[Model G] output shape: {sample_G_output.shape}")
 
 D = sle_gan.Discriminator(RESOLUTION)
 sample_D_output = D.initialize(BATCH_SIZE)
-if args.discriminator_weights is not None:
-    D.load_weights(str(checkpoints_folder / "D_checkpoint.h5"))
-    print("Weights are loaded for D")
+
 print(f"[Model D] real_fake output shape: {sample_D_output[0].shape}")
 print(f"[Model D] image output shape{sample_D_output[1].shape}")
 print(f"[Model D] image part output shape{sample_D_output[2].shape}")
 
-G_optimizer = tf.optimizers.Adam(learning_rate=args.G_learning_rate)
-D_optimizer = tf.optimizers.Adam(learning_rate=args.D_learning_rate)
+#decay_steps=1000
+#decay_rate=0.90
+#staircase=True
+
+#g_lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+#    args.G_learning_rate, decay_steps=decay_steps, decay_rate=decay_rate, staircase=staircase) 
+
+#d_lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(
+#    args.D_learning_rate, decay_steps=decay_steps, decay_rate=decay_rate, staircase=staircase) 
+
+
+beta_1=0.5
+G_optimizer = tf.optimizers.Adam(learning_rate=args.G_learning_rate, beta_1=beta_1)
+D_optimizer = tf.optimizers.Adam(learning_rate=args.D_learning_rate, beta_1=beta_1)
 
 if args.fid:
     # Model for the FID calculation
@@ -69,13 +77,23 @@ D_real_fake_loss_metric = tf.keras.metrics.Mean()
 D_I_reconstruction_loss_metric = tf.keras.metrics.Mean()
 D_I_part_reconstruction_loss_metric = tf.keras.metrics.Mean()
 
+
 diff_augment_policies = None
 if args.diff_augment:
     diff_augment_policies = "color,translation,cutout"
 
 for epoch in range(EPOCHS):
     print(f"Epoch {epoch} -------------")
+    steps_per_epoch = len(dataset)
     for step, image_batch in enumerate(dataset):
+        # Moved weight loading here because model needs to be initialized to load weights.
+        if (step == 1) and (epoch == 0):
+            if args.generator_weights is not None:
+                G.load_weights(args.generator_weights)
+                print("Weights are loaded for G")
+            if args.discriminator_weights is not None:
+                D.load_weights(args.discriminator_weights)#D.load_weights(str(checkpoints_folder / "D_checkpoint.h5"))
+                print("Weights are loaded for D")
         G_loss, D_loss, D_real_fake_loss, D_I_reconstruction_loss, D_I_part_reconstruction_loss = sle_gan.train_step(
             G=G,
             D=D,
@@ -97,7 +115,28 @@ for epoch in range(EPOCHS):
                   f"D realfake loss {D_real_fake_loss_metric.result():.4f} | "
                   f"D I recon loss {D_I_reconstruction_loss_metric.result():.4f} | "
                   f"D I part recon loss {D_I_part_reconstruction_loss_metric.result():.4f}")
+            # record metrics every step.
+            tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch*steps_per_epoch + step)
+            tf.summary.scalar("D_loss/D_loss", D_loss_metric.result(), epoch*steps_per_epoch + step)
+            tf.summary.scalar("D_loss/D_real_fake_loss", D_real_fake_loss_metric.result(), epoch*steps_per_epoch + step)
+            tf.summary.scalar("D_loss/D_I_reconstruction_loss", D_I_reconstruction_loss_metric.result(), epoch*steps_per_epoch + step)
+            tf.summary.scalar("D_loss/D_I_part_reconstruction_loss", D_I_part_reconstruction_loss_metric.result(), epoch*steps_per_epoch + step)
+        if step % 500 == 0 and step != 0:
+            # Generate images every 500 steps if an epoch is longer than that
+            # Generate test images
+            generated_images = G(test_input_for_generation, training=False)
+            generated_images = sle_gan.postprocess_images(generated_images, dtype=tf.uint8).numpy()
+            sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, generated_images, experiments_folder / "generated_images",
+                                                      5,5)
 
+            # Generate reconstructions from Discriminator
+            _, decoded_images, decoded_part_images = D(test_images, training=False)
+            decoded_images = sle_gan.postprocess_images(decoded_images, dtype=tf.uint8).numpy()
+            decoded_part_images = sle_gan.postprocess_images(decoded_part_images, dtype=tf.uint8).numpy()
+            sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, decoded_images, experiments_folder / "reconstructed_whole_images",
+                                                      5,5)
+            sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, decoded_part_images,
+                                                      experiments_folder / "reconstructed_part_images", 5,5)
     if args.fid:
         if epoch % args.fid_frequency == 0:
             fid_score = sle_gan.evaluation_step(inception_model=fid_inception_model,
@@ -108,13 +147,9 @@ for epoch in range(EPOCHS):
                                                 image_width=RESOLUTION,
                                                 nb_of_images_to_use=args.fid_number_of_images)
             print(f"[FID] {fid_score:.2f}")
-            tf.summary.scalar("FID_score", fid_score, epoch)
+            tf.summary.scalar("FID_score", fid_score, epoch*steps_per_epoch + step)
 
-    tf.summary.scalar("G_loss/G_loss", G_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_loss", D_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_real_fake_loss", D_real_fake_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_I_reconstruction_loss", D_I_reconstruction_loss_metric.result(), epoch)
-    tf.summary.scalar("D_loss/D_I_part_reconstruction_loss", D_I_part_reconstruction_loss_metric.result(), epoch)
+
 
     print(f"Epoch {epoch} - "
           f"G loss {G_loss_metric.result():.4f} | "
@@ -136,14 +171,14 @@ for epoch in range(EPOCHS):
     # Generate test images
     generated_images = G(test_input_for_generation, training=False)
     generated_images = sle_gan.postprocess_images(generated_images, dtype=tf.uint8).numpy()
-    sle_gan.visualize_images_on_grid_and_save(epoch, generated_images, experiments_folder / "generated_images",
-                                              5, 5)
+    sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, generated_images, experiments_folder / "generated_images",
+                                              5,5)
 
     # Generate reconstructions from Discriminator
     _, decoded_images, decoded_part_images = D(test_images, training=False)
     decoded_images = sle_gan.postprocess_images(decoded_images, dtype=tf.uint8).numpy()
     decoded_part_images = sle_gan.postprocess_images(decoded_part_images, dtype=tf.uint8).numpy()
-    sle_gan.visualize_images_on_grid_and_save(epoch, decoded_images, experiments_folder / "reconstructed_whole_images",
-                                              5, 5)
-    sle_gan.visualize_images_on_grid_and_save(epoch, decoded_part_images,
-                                              experiments_folder / "reconstructed_part_images", 5, 5)
+    sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, decoded_images, experiments_folder / "reconstructed_whole_images",
+                                              5,5)
+    sle_gan.visualize_images_on_grid_and_save(epoch*steps_per_epoch + step, decoded_part_images,
+                                              experiments_folder / "reconstructed_part_images", 5,5)

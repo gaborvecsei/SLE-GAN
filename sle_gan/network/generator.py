@@ -1,6 +1,6 @@
 import tensorflow as tf
 import tensorflow_addons as tfa
-
+from tensorflow_addons.layers import SpectralNormalization as SN
 from sle_gan.network.common_layers import GLU
 
 
@@ -15,10 +15,10 @@ class InputBlock(tf.keras.layers.Layer):
     def __init__(self, filters: int, **kwargs):
         super().__init__(**kwargs)
 
-        self.conv2d_transpose = tf.keras.layers.Conv2DTranspose(filters=filters * 2,
+        self.conv2d_transpose = SN(tf.keras.layers.Conv2DTranspose(filters=filters * 2,
                                                                 kernel_size=(4, 4),
-                                                                strides=(1, 1))
-        self.normalization = tf.keras.layers.BatchNormalization()
+                                                                strides=(1, 1), use_bias=False))
+        self.normalization = tf.keras.layers.LayerNormalization()
         self.glu = GLU()
 
     def call(self, inputs, **kwargs):
@@ -34,8 +34,8 @@ class UpSamplingBlock(tf.keras.layers.Layer):
         self.output_filters = output_filters
 
         self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
-        self.conv2d = tf.keras.layers.Conv2D(filters=output_filters * 2, kernel_size=(3, 3), padding="same")
-        self.normalization = tf.keras.layers.BatchNormalization()
+        self.conv2d = SN(tf.keras.layers.Conv2D(filters=output_filters * 2, kernel_size=(3, 3), padding="same", use_bias=False))
+        self.normalization = tf.keras.layers.LayerNormalization()
         self.glu = GLU()
 
     def call(self, inputs, **kwargs):
@@ -45,6 +45,32 @@ class UpSamplingBlock(tf.keras.layers.Layer):
         x = self.glu(x)
         return x
 
+class UpSamplingBlock2(tf.keras.layers.Layer):
+    def __init__(self, output_filters: int, **kwargs):
+        super().__init__(**kwargs)
+        self.output_filters = output_filters
+
+        self.upsampling = tf.keras.layers.UpSampling2D(size=(2, 2), interpolation="nearest")
+        self.conv2d = SN(tf.keras.layers.Conv2D(filters=output_filters * 2, kernel_size=(3, 3), padding="same", use_bias=False))
+        self.noise = tf.keras.layers.GaussianNoise(0.1)
+        self.normalization = tf.keras.layers.LayerNormalization()
+        self.glu = GLU()
+        self.conv2d_2 = SN(tf.keras.layers.Conv2D(filters=output_filters * 2, kernel_size=(3, 3), padding="same", use_bias=False))
+        self.noise_2 = tf.keras.layers.GaussianNoise(0.1)
+        self.normalization_2 = tf.keras.layers.LayerNormalization()
+        self.glu_2 = GLU()
+        
+    def call(self, inputs, **kwargs):
+        x = self.upsampling(inputs)
+        x = self.conv2d(x)
+        x = self.noise(x)
+        x = self.normalization(x)
+        x = self.glu(x)
+        x = self.conv2d_2(x)
+        x = self.noise_2(x)
+        x = self.normalization_2(x)
+        x = self.glu_2(x)
+        return x
 
 class SkipLayerExcitationBlock(tf.keras.layers.Layer):
     """
@@ -65,22 +91,22 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
         super().__init__(**kwargs)
 
         self.pooling = tfa.layers.AdaptiveAveragePooling2D(output_size=(4, 4), data_format="channels_last")
-        self.conv2d_1 = tf.keras.layers.Conv2D(filters=input_low_res_filters,
+        self.conv2d_1 = SN(tf.keras.layers.Conv2D(filters=input_low_res_filters,
                                                kernel_size=(4, 4),
                                                strides=1,
-                                               padding="valid")
-        self.leaky_relu = tf.keras.layers.LeakyReLU(alpha=0.1)
-        self.conv2d_2 = tf.keras.layers.Conv2D(filters=input_high_res_filters,
+                                               padding="valid", use_bias=False))
+        # replace with silu (aka swift) #self.leaky_relu = tf.keras.layers.LeakyReLU(alpha=0.2)
+        self.conv2d_2 = SN(tf.keras.layers.Conv2D(filters=input_high_res_filters,
                                                kernel_size=(1, 1),
                                                strides=1,
-                                               padding="valid")
+                                               padding="valid", use_bias=False))
 
     def call(self, inputs, **kwargs):
         x_low, x_high = inputs
 
         x = self.pooling(x_low)
         x = self.conv2d_1(x)
-        x = self.leaky_relu(x)
+        x = tf.nn.silu(x)
         x = self.conv2d_2(x)
         x = tf.nn.sigmoid(x)
 
@@ -90,7 +116,7 @@ class SkipLayerExcitationBlock(tf.keras.layers.Layer):
 class OutputBlock(tf.keras.layers.Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.conv = tf.keras.layers.Conv2D(filters=3, kernel_size=3, strides=1, padding="same")
+        self.conv = SN(tf.keras.layers.Conv2D(filters=3, kernel_size=3, strides=1, padding="same", use_bias=False))
 
     def call(self, inputs, **kwargs):
         x = self.conv(inputs)

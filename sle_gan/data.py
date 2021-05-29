@@ -51,7 +51,10 @@ def create_dataset(batch_size: int,
                    use_flip_augmentation: bool = True,
                    image_extension: str = "jpg",
                    shuffle_buffer_size: int = 100):
-    dataset = tf.data.Dataset.list_files(folder + f"/*.{image_extension}")
+    try:
+        dataset = tf.data.Dataset.list_files(folder + f"/*.{image_extension}")
+    except:
+        dataset = tf.data.Dataset.list_files(folder + f"/*.png")
     dataset = dataset.map(read_image_from_path)
     if use_flip_augmentation:
         dataset = dataset.map(tf.image.flip_left_right)
@@ -62,7 +65,7 @@ def create_dataset(batch_size: int,
 
 def center_crop_images(images, crop_resolution: int):
     """
-    Crops the center of the images
+    Randomly crops images to target resolution.
     Args:
         images: shape: (B, H, W, 3), H should be equal to W
         crop_resolution: target resolution for the crop
@@ -71,15 +74,11 @@ def center_crop_images(images, crop_resolution: int):
         cropped images which has the shape: (B, crop_resolution, crop_resolution, 3)
     """
 
-    crop_resolution = tf.cast(crop_resolution, tf.float32)
-    half_of_crop_resolution = crop_resolution / 2
-    image_height = tf.cast(tf.shape(images)[1], tf.float32)
-    image_center = image_height / 2
-
-    from_ = int(image_center - half_of_crop_resolution)
-    to_ = int(image_center + half_of_crop_resolution)
-
-    return images[:, from_:to_, from_:to_, :]
+    if len(tf.shape(images)) == 3:
+        images = tf.image.random_crop(images, size=(crop_resolution, crop_resolution, tf.shape(images)[2]))
+    else:
+        images = tf.image.random_crop(images, size=(tf.shape(images)[0], crop_resolution, crop_resolution, tf.shape(images)[3]))
+    return images 
 
 
 def get_test_images(batch_size: int, folder: str, resolution: int):
