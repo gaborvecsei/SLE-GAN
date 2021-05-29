@@ -83,7 +83,7 @@ $ python train.py --name experiment_1 --resolution 512 --batch-size 8 --diff-aug
 
 ## Differences from the paper
 
-- Instead of random cropping to get `I_{part}` now only center cropping is implemented
+- ~~Instead of random cropping to get `I_{part}` now only center cropping is implemented~~ Random cropping is implemented under the name center cropping
 - Optionally you can use [Differentiable Augmentations](https://arxiv.org/abs/2006.10738) (`--diff-augment`)
 
 ### Not mentioned in the paper
