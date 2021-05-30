@@ -222,7 +222,7 @@ class Discriminator(tf.keras.models.Model):
         x_16 = self.downsample_16(x_sle_32)  # --> (B, 16, 16, 256)
         x_sle_16 = self.sle_128_16([x_128, x_16])
         
-        x_8 = self.downsample_8(x_16)  # --> (B, 8, 8, 512)
+        x_8 = self.downsample_8(x_sle_16)  # --> (B, 8, 8, 512)
         x_sle_8 = self.sle_64_8([x_64, x_8])
         
         # Implemented random cropping but left name.
